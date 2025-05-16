@@ -1,0 +1,29 @@
+#pragma once
+
+class Window;
+class Renderer;
+class GameStateMachine;
+class UserInterface;
+class SoundManager;
+
+#include <string>
+
+class GameState {
+protected:
+	Window* window;
+	GameStateMachine* GSM;
+	UserInterface* UI;
+	std::string id;
+public:
+	GameState(Window* window, GameStateMachine* GSM = nullptr, const std::string& id = "");
+	virtual void handleEvents();
+
+	virtual void update(SoundManager* soundManager);
+
+	virtual void render(Renderer* renderer) const;
+
+	virtual bool onEnter(Renderer* renderer, SoundManager* soundManager) = 0;
+	virtual bool onExit(SoundManager* soundManager) = 0;
+
+	virtual std::string getStateID();
+};

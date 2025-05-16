@@ -1,0 +1,166 @@
+#pragma once
+
+#include "core/renderer.hpp"
+
+#include "managers/fontManager.hpp"
+#include "enums/virtualScreen.hpp"
+
+#include <vector>
+
+class UIElement {
+protected:
+	SDL_FRect rect;
+	SDL_Color color;
+	SDL_Color defaultColor;
+	SDL_Color outlineColor;
+	SDL_Color textColor;
+	bool centered;
+	bool visible;
+public:
+	UIElement(const SDL_FRect& rect = { 0 },
+		const SDL_Color& color = { 0,0,0,155 },
+		const float centered = false);
+	virtual ~UIElement(){}
+
+	SDL_FRect getScaledPos(const SDL_FRect& rect, const unsigned int windowWidth, const unsigned int windowHeight) const;
+
+	virtual void update(const SDL_FPoint& mousePos = { 0,0 }, const bool clicked = false, const unsigned int windowWidth = 0, const unsigned int windowHeight = 0) {};
+	virtual void draw(Renderer* renderer, const unsigned int windowWidth, const unsigned int windowHeight) const;
+
+	void setVisible(const bool set);
+	bool getVisible() const;
+};
+
+class UILabel : public UIElement {
+protected:
+	std::string text;
+public:
+	UILabel(const SDL_FRect& rect = { 0 },
+		const SDL_Color& color = { 0,0,0,155 },
+		const float centered = false,
+		const std::string& text = "");
+	virtual ~UILabel() {}
+
+	virtual void draw(Renderer* renderer, const unsigned int windowWidth, const unsigned int windowHeight) const;
+};
+
+class UIButton : public UIElement {
+protected:
+	bool hover;
+	bool click;
+
+	SDL_Color clickColor;
+	SDL_Color hoverColor;
+	SDL_Color textColor;
+	std::string text;
+
+	void (*callback)(void*);
+	void* context;
+public:
+	UIButton(const SDL_FRect& rect = { 0 },
+		const SDL_Color& color = { 0,0,0,155 },
+		const float centered = false,
+		const std::string& text = "",
+		void (*callback)(void*) = nullptr,
+		void* context = nullptr);
+
+	virtual ~UIButton(){}
+
+	virtual void update(const SDL_FPoint& mousePos, const bool clicked, const unsigned int windowWidth, const unsigned int windowHeight) override;
+	virtual void draw(Renderer* renderer, const unsigned int windowWidth, const unsigned int windowHeight) const override;
+};
+
+template<typename C, typename T>
+class UIText : public UIElement {
+protected:
+	const C* instance;
+	std::vector<std::string> strs;
+	std::vector<T(C::*)() const> values;
+	std::vector<T(*)(T)> evaluators;
+public:
+	UIText(const SDL_FRect& rect = { 0 },
+		const SDL_Color& color = { 0,0,0,155 },
+		const float centered = false,
+		const C* instance = nullptr,
+		const std::vector<std::string>& strings = {},
+		const std::vector<T(C::*)() const>& valueFuncs = {},
+		const std::vector<T(*)(T)>& evalFuncs = {})
+		: UIElement(rect, color, centered), instance(instance), strs(strings), values(valueFuncs), evaluators(evalFuncs) {
+	}
+
+	virtual void draw(Renderer* renderer, const unsigned int windowWidth, const unsigned int windowHeight) const override {
+		UIElement::draw(renderer, windowWidth, windowHeight);
+
+		SDL_FRect newRect = getScaledPos(rect, windowWidth, windowHeight);
+
+		std::string result;
+		size_t maxSize = std::max({ strs.size(), values.size(), evaluators.size() });
+
+		for (size_t i = 0; i < maxSize; ++i) {
+			if (i < strs.size()) result += strs[i];
+			if (i < values.size() && instance) {
+				T val = (instance->*values[i])();
+				if (i < evaluators.size() && evaluators[i]) {
+					val = evaluators[i](val);
+				}
+				result += std::to_string((int)val);
+			}
+		}
+
+		FontManager::getInstance().drawText(renderer,
+			result,
+			FontManager::FontSize::MEDIUM,
+			newRect.x, newRect.y, textColor,
+			windowWidth, windowHeight
+		);
+	}
+};
+
+template<typename C, typename T>
+class UIResource : public UIElement {
+private:
+	const C* instance;
+	T (C::*resource)() const;
+	T (C::*maxResource)() const;
+public:
+	UIResource(const SDL_FRect& rect = { 0 },
+		const SDL_Color& color = { 0,0,0,155 },
+		const float centered = false,
+		const C* instance = nullptr,
+		T (C::* resource)() const = nullptr,
+		T (C::* maxResource)() const = nullptr) : UIElement(rect, color, centered) {
+			this->instance = instance;
+			this->resource = resource;
+			this->maxResource = maxResource;
+	}
+
+	virtual void draw(Renderer* renderer, const unsigned int windowWidth, const unsigned int windowHeight) const override {
+		SDL_FRect newRect = getScaledPos(rect, windowWidth, windowHeight);
+
+		SDL_FRect outlineRec = rect;
+		outlineRec.x--;
+		outlineRec.y--;
+		outlineRec.w += 2;
+		outlineRec.h += 2;
+		outlineRec = renderer->scale(outlineRec);
+
+		SDL_SetRenderDrawColor(renderer->sdlRenderer, outlineColor.r, outlineColor.g, outlineColor.b, outlineColor.a);
+		SDL_RenderDrawRectF(renderer->sdlRenderer, &outlineRec);
+
+		SDL_SetRenderDrawColor(renderer->sdlRenderer, color.r, color.g, color.b, color.a);
+
+		SDL_FRect resourceRec = renderer->scale(rect);
+
+		if ((instance->*resource)() <= 0) resourceRec.w = 0;
+		else resourceRec.w *= (instance->*resource)() / float((instance->*maxResource)());
+
+		SDL_RenderFillRectF(renderer->sdlRenderer, &resourceRec);
+
+		FontManager::getInstance().drawText(renderer,
+			std::to_string((int)(instance->*resource)()),
+			FontManager::FontSize::MEDIUM,
+			newRect.x, newRect.y,
+			textColor, windowWidth, windowHeight
+		);
+	}
+};
