@@ -3,6 +3,8 @@ last updated 6/1/2025
 (this is my current project) 'basic' 2d game engine:
 -player has health and a weapon, shoot projectiles, pickup items, maintain an inventory, move around the level, collidide with objects and actors, etc
 
+-animated actors(npc/player) with move, attack, attack while moving sprite sheets
+
 -collision detection
 
 -customizble binds in .ini
@@ -44,3 +46,5 @@ plans to add:
 
 -tiled map support for better map editing
 
+![asd](https://github.com/user-attachments/assets/c47b433f-1384-416c-9656-4a091af8ecfc)
+(textures used are only placeholders)
