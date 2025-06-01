@@ -16,11 +16,12 @@ public:
 	UserInterface(Window *window);
 	virtual ~UserInterface();
 
-	void addElement(UIElement* element);
-	/*
-		could store an id thats created instead of a name, make get id cmd of element, then removeElement(someelement.getid())...
-	*/
-	//void removeElement(const std::string& name);
+	virtual size_t addElement(UIElement* element);
+	virtual void removeElement(const size_t& id) const;
+	virtual UIElement* getElement(const size_t& id) const;
+	virtual UIElement* getElementByIndex(const size_t index) const;
+	virtual UIElement* getElementByName(const std::string& name) const;
+	virtual size_t getSize() const;
 
 	virtual void handleEvents();
 	virtual void update();

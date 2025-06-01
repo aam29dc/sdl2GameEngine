@@ -96,6 +96,50 @@ bool Input::isKeyDown(const SDL_Scancode& key) const {
 	return false;
 }
 
+SDL_Scancode Input::getFirstKeyDown() const {
+	if (_keyStates != nullptr) {
+		for (int i = 0; i < SDL_NUM_SCANCODES; ++i) {
+			if (_keyStates[i]) {
+				return static_cast<SDL_Scancode>(i);
+			}
+		}
+	}
+	return SDL_SCANCODE_UNKNOWN;
+}
+
+SDL_Scancode Input::getFirstKeyReleased() const {
+	if (_keyStates != nullptr && _prevKeyStates != nullptr) {
+		for (int i = 0; i < SDL_NUM_SCANCODES; ++i) {
+			if (_prevKeyStates[i] && !_keyStates[i]) {
+				return static_cast<SDL_Scancode>(i);
+			}
+		}
+	}
+	return SDL_SCANCODE_UNKNOWN;
+}
+
+bool Input::isAnyKeyReleased() const {
+	if (_keyStates != nullptr && _prevKeyStates != nullptr) {
+		for (int i = 0; i < SDL_NUM_SCANCODES; ++i) {
+			if (_prevKeyStates[i] && !_keyStates[i]) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+bool Input::isAnyKeyDown() const {
+	if (_keyStates != nullptr) {
+		for (int i = 0; i < SDL_NUM_SCANCODES; ++i) {
+			if (_keyStates[i]) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
 /* registers a 'release' when prev key state is 0, then current key state is 1 (rather than the other way around, as to register when the key is hit)
 */
 bool Input::isKeyReleased(const SDL_Scancode& key) const {

@@ -4,8 +4,9 @@
 #include "objects/meleeAttack.hpp"
 #include "objects/projectile.hpp"
 #include "managers/soundManager.hpp"
+#include "ui/uiElement.hpp"
 
-Actor::Actor(const Float2& pos) : AnimateGameObject(0, pos, {0,0}, false, false),
+Actor::Actor(const Float2& pos, UITextBox* const combatlog) : AnimateGameObject(0, pos, {0,0}, false, false),
 	weapons({ Weapon("Bow", 0.1f, 200.0f, 4.0f, 20, 3), Weapon("Melee", 0.5f, 10.0f, 32.0f, 20) })
 {
 	weapons[0].setSfx("sfx_shoot");
@@ -37,10 +38,14 @@ Actor::Actor(const Float2& pos) : AnimateGameObject(0, pos, {0,0}, false, false)
 	lastState = state;
 
 	isNPC = true;
+
+	this->combatlog = combatlog;
 }
 
 Actor::~Actor() {
-
+	if (combatlog) {
+		combatlog = nullptr;
+	}
 }
 
 void Actor::update(const float dt) {
@@ -69,7 +74,7 @@ void Actor::update(const float dt) {
 	}
 }
 
-void Actor::draw(Renderer* renderer, const Camera& camera) const {
+void Actor::draw(Renderer* renderer, const Camera& camera, const bool& iso) const {
 	float angleDeg = angle * (180.0f / (float)M_PI);
 	angleDeg = std::fmod(angleDeg + 360.0f, 360.0f);  // Normalize
 	angleDeg += 22.5f;  // Center sectors
@@ -97,6 +102,8 @@ void Actor::draw(Renderer* renderer, const Camera& camera) const {
 	SDL_FRect dst = { pos.x, pos.y, (float)size.x, (float)size.y };
 
 	dst = camera.worldToView(dst);
+
+	if (iso) dst = renderer->viewToIso(dst);
 
 	renderer->draw(id, {
 			static_cast<int>((frameCol * PhysicsObject::getWidth()) + (frameCol * SDLGameObject::MARGIN) + 1),

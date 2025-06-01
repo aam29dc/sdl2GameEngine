@@ -1,4 +1,4 @@
-#include "playState.hpp"
+﻿#include "playState.hpp"
 #include "states/gameStateMachine.hpp"
 #include "states/pauseState.hpp"
 #include "states/gameOverState.hpp"
@@ -16,6 +16,8 @@
 #include "managers/soundManager.hpp"
 #include "managers/saveManager.hpp"
 #include "ui/userInterface.hpp"
+#include "core/binds.hpp"
+#include "managers/cvarManager.hpp"
 #include <algorithm>
 
 PlayState::PlayState(Window* window, GameStateMachine* GSM) : GameState(window, GSM, "Play") {
@@ -23,9 +25,18 @@ PlayState::PlayState(Window* window, GameStateMachine* GSM) : GameState(window, 
 	player = nullptr;
 	camera = new Camera({ 1440.0f, 900.0f });
 	timer = 0.0f;
+	inventoryVisible = false;
+	combatlog = nullptr;
+	binds = nullptr;
 }
 
 PlayState::~PlayState() {
+	std::cout << "~Playstate called.\n";
+	if (UI) delete UI;
+	UI = nullptr;
+	if (combatlog) {
+		combatlog = nullptr;
+	}
 	//All Objects in level (objects, gameitems)
 	if (level1) delete level1;
 	level1 = nullptr;
@@ -58,22 +69,82 @@ void PlayState::handleEvents() {
 	UI->handleEvents();
 	if(player) player->input(Input::getInputHandler()->getMousePosition());
 
-	if (Input::getInputHandler()->isKeyReleased(SDL_SCANCODE_ESCAPE)) {
+	if (Input::getInputHandler()->isKeyReleased(binds->getMiscBind(Misc::CONSOLE).key)) {
+		UI->getElementByName("Console")->toggleVisible();
+	}
+
+	if (UI->getElementByName("Console")->getVisible()) {
+		auto input = Input::getInputHandler();
+		SDL_Scancode key = input->getFirstKeyReleased();
+
+		if (key != SDL_SCANCODE_UNKNOWN) {
+			UITextBox* console = dynamic_cast<UITextBox*>(UI->getElementByName("Console"));
+
+			if (key == SDL_SCANCODE_RETURN) {
+				console->endLine(); // Commit current line
+			}
+			else if (key >= SDL_SCANCODE_A && key <= SDL_SCANCODE_Z) {
+				// Check for shift key
+				bool shift = input->isKeyDown(SDL_SCANCODE_LSHIFT) || input->isKeyDown(SDL_SCANCODE_RSHIFT);
+				char c = (shift) ? ('A' + (key - SDL_SCANCODE_A)) : ('a' + (key - SDL_SCANCODE_A));
+				console->addChar(std::string(1, c));
+			}
+			else if (key >= SDL_SCANCODE_1 && key <= SDL_SCANCODE_0) {
+				// Handle numbers (you can enhance this to handle shift symbols too)
+				const char* name = SDL_GetScancodeName(key);
+				console->addChar(name);
+			}
+		}
+		return;
+	}
+
+	if (Input::getInputHandler()->isKeyReleased(binds->getInteractBind(Interact::PAUSE).key)) {
 		GSM->queuePush(new PauseState(window, GSM));
 	}
 
-	if (Input::getInputHandler()->isKeyReleased(SDL_SCANCODE_EQUALS)) {
+	if (Input::getInputHandler()->isKeyReleased(binds->getMiscBind(Misc::ZOOMOUT).key)) {
 		camera->setZoom(camera->getZoom() * 2.0f);
 	}
 
-	if (Input::getInputHandler()->isKeyReleased(SDL_SCANCODE_MINUS)) {
+	if (Input::getInputHandler()->isKeyReleased(binds->getMiscBind(Misc::ZOOMIN).key)) {
 		camera->setZoom(camera->getZoom() * 0.5f);
 	}
 
-	if (Input::getInputHandler()->isKeyReleased(SDL_SCANCODE_H)) {
-		//SaveManager::saveToFile(makeSnapShot(), "assets/saves/save.json");
-		clear();
+	if (Input::getInputHandler()->isKeyReleased(binds->getMiscBind(Misc::SAVE).key)) {
+		SaveManager::saveToFile(makeSnapShot(), "assets/saves/save.json");
 		return;
+	}
+
+	//inventory
+	if (Input::getInputHandler()->isKeyReleased(binds->getInteractBind(Interact::INVENTORY).key)) {
+		inventoryVisible = showInventory();
+	}
+	if (inventoryVisible) {
+		if (Input::getInputHandler()->isKeyReleased(binds->getInteractBind(Interact::ITEM1).key)) {
+			if (player->useItem(0)) {
+				dynamic_cast<UITexture*>(UI->getElement(bagIDs[0]))->setSrc(InventoryItem::getSrc(ItemType::Empty));
+			}
+		}
+		if (Input::getInputHandler()->isKeyReleased(binds->getInteractBind(Interact::ITEM2).key)) {
+			if (player->useItem(1)) {
+				dynamic_cast<UITexture*>(UI->getElement(bagIDs[1]))->setSrc(InventoryItem::getSrc(ItemType::Empty));
+			}
+		}
+		if (Input::getInputHandler()->isKeyReleased(binds->getInteractBind(Interact::ITEM3).key)) {
+			if (player->useItem(2)) {
+				dynamic_cast<UITexture*>(UI->getElement(bagIDs[2]))->setSrc(InventoryItem::getSrc(ItemType::Empty));
+			}
+		}
+		if (Input::getInputHandler()->isKeyReleased(binds->getInteractBind(Interact::ITEM4).key)) {
+			if (player->useItem(3)) {
+				dynamic_cast<UITexture*>(UI->getElement(bagIDs[3]))->setSrc(InventoryItem::getSrc(ItemType::Empty));
+			}
+		}
+		if (Input::getInputHandler()->isKeyReleased(binds->getInteractBind(Interact::ITEM5).key)) {
+			if (player->useItem(4)) {
+				dynamic_cast<UITexture*>(UI->getElement(bagIDs[4]))->setSrc(InventoryItem::getSrc(ItemType::Empty));
+			}
+		}
 	}
 }
 
@@ -114,6 +185,7 @@ void PlayState::update(SoundManager* soundManager) {
 
 	//GAMEOVER on DEAD Player
 	if (player->isDead()) {
+		combatlog->addLine("You died.");
 		GSM->queuePush(new GameOverState(window, GSM));
 	}
 
@@ -191,13 +263,15 @@ void PlayState::update(SoundManager* soundManager) {
 
 	//PLAYER ITEM PICKUP (AFTER Position update)
 	if (player) {
-		Float2 playerPos = player->getPos();	// + player->getVelocity() * dt; // this is BEFORE applying pos update
+		Float2 playerPos = player->getPos();
 		for (auto* item : level1->getItems()) {
 			if (Collision::rectsIntersect(
 				arrayToFRect(playerPos, player->getSize()),
 				arrayToFRect(item->getPos(), { (float)SDLGameObject::SIZE, (float)SDLGameObject::SIZE })
 			)) {
-				if (player->pickupItem(item->getType())) {
+				int index = player->pickupItem(item->getType());
+				if (index!=-1) {
+					dynamic_cast<UITexture*>(UI->getElement(bagIDs[index]))->setSrc(InventoryItem::getSrc(item->getType()));
 					item->setPickedUp();
 				}
 			}
@@ -228,20 +302,21 @@ void PlayState::refreshAllObjects() {
 }
 
 void PlayState::render(Renderer* renderer) const {
+	bool iso = false;
 	if (level1) {
 		level1->drawBackground(renderer, *camera);
 		//draw tiles, objects, items, and entities with y-mapping
-		if(player) level1->draw(renderer, player, npcs, *camera);
+		if(player) level1->draw(renderer, player, npcs, *camera, iso);
 	}
 
 	//draw projectiles
 	// (this should be y-sorted as well)
 	for (auto* projectile : projectiles) {
-		projectile->draw(renderer, *camera);
+		projectile->draw(renderer, *camera, iso);
 	}
 	//draw melee swings
 	for (auto* swing : swings) {
-		swing->draw(renderer, *camera);
+		swing->draw(renderer, *camera, iso);
 	}
 
 	/*SDL_Rect miniMapViewport = {screenWidth - 150, 10, 140, 140};
@@ -274,28 +349,66 @@ void PlayState::loadTextures(Renderer* renderer) {
 	}
 }
 
+bool PlayState::showInventory() {
+	for (size_t i = 0; i < Player::inventoryCapacity; i++) {
+		UI->getElement(bagIDs[i])->toggleVisible();
+	}
+	inventoryVisible = !inventoryVisible;
+	return inventoryVisible;
+}
+
+void PlayState::loadInventory(Renderer* renderer) {
+	size_t bagTextureID = 0;
+	TextureManager::getInstance()->load(renderer, bagTextureID, "assets/textures/icons.png");
+
+	UI->addElement(new UITexture({ 1340, 800, 64, 64 }, bagTextureID, { (1*7)+(32*7)+1,1,32,32 }, Color::Shade,
+		[](void* ctx) {static_cast<PlayState*>(ctx)->showInventory();}, this));
+
+	for (size_t i = 0; i < Player::inventoryCapacity; ++i) {
+		bagIDs[i] = UI->addElement(new UITexture({ 1276 - (float)i*64, 800, 64, 64 }, bagTextureID, { 1,1,32,32 }, Color::Shade));
+		UI->getElement(bagIDs[i])->toggleVisible();
+	}
+}
+
 // REDUCE CODE REUSE HERE
 bool PlayState::onEnter(Renderer* renderer, SoundManager* soundManager) {
 	std::cout << "Entering play state" << std::endl;
 
+	//Read Binds file
+	binds = new Binds();
+	binds->readBinds("assets/binds.ini");
+
+	//Combatlog (UI)
+	UI->addElement(new UITextBox({ 20, 760, 400, 100 }, Color::Shade, false, "CombatLog"));
+	combatlog = dynamic_cast<UITextBox*>(UI->getElementByName("CombatLog"));
+
 	//Allocate player
-	player = new Player({ 200.0f, 600.0f });
+	player = new Player({ 320.0f, 450.0f }, combatlog, binds, dynamic_cast<UITextBox*>(UI->getElementByName("Console")));
 	camera->follow(player->getPos());
 
 	//Allocate npcs
 	npcs.clear();
-	npcs.emplace_back(new Npc());
+	npcs.emplace_back(new Npc({ 64, 192 }, combatlog));
 	npcs[0]->setPos({ 64, 192 });
 
 	//Create UI Elements
-
-	UI->addElement(new UIResource<Player, int>({ 10, 10, 100, 20 }, { 0,255,0,255 }, false, player, &Player::getHealth, &Player::getMaxHealth));
-	UI->addElement(new UIText<Player, float>({ 10, 40, 140, 20 }, { 0,255,0,255 }, false, player, { "X: ", " Y: " }, { &Player::getPosX, &Player::getPosY }));
-	UI->addElement(new UIText<PlayState, float>({ 670, 10, 100, 20 }, { 0,255,0,255 }, false, this,	{ "Time: " }, { &PlayState::getTimer }));
-	UI->addElement(new UIText<Time, float>({ 770, 10, 100, 20 }, { 0,255,0,255 }, false, Time::getInstance(), { "FPS: " }, { &Time::getDt }, { [](float time) -> float { return time != 0.0f ? 1.0f / time : 0.0f; } }));
+	loadInventory(renderer);
+	UI->addElement(new UIResource<Player, int>({ 10, 10, 100, 20 }, Color::Green, player, &Player::getHealth, &Player::getMaxHealth));
+	UI->addElement(new UIText<Player, float>({ 10, 40, 140, 20 }, Color::Green, player, { "X: ", " Y: " }, { &Player::getPosX, &Player::getPosY }));
+	UI->addElement(new UIText<PlayState, float>({ 670, 10, 100, 20 }, Color::Green, this, { "Time: " }, { &PlayState::getTimer }));
+	UI->addElement(new UIText<Time, float>({ 1340, 10, 100, 20 }, Color::Green, Time::getInstance(), { "FPS: " }, { &Time::getDt }, { [](float time) -> float { return time != 0.0f ? 1.0f / time : 0.0f; } }));
 
 	//Load level
-	level1 = new Level(800, 800);
+	level1 = new Level();
+	
+	/*
+	level1->load(renderer,
+		"assets/level/level1.bg", "assets/textures/bg.png",
+		"assets/level/level1.grd", "assets/textures/isometricGround.png",
+		"", "",
+		"", "", true);
+		*/
+		
 	level1->load(renderer,
 		"assets/level/level1.bg", "assets/textures/bg.png",
 		"assets/level/level1.grd", "assets/textures/ground.png",
@@ -314,6 +427,9 @@ bool PlayState::onEnter(Renderer* renderer, SoundManager* soundManager) {
 	soundManager->load("assets/sounds/melee.wav", "sfx_melee", soundType::SOUND_SFX);
 	soundManager->load("assets/sounds/gameOver.wav", "sfx_gameOver", soundType::SOUND_SFX);
 	soundManager->load("assets/sounds/potionUse.wav", "sfx_potionUse", soundType::SOUND_SFX);
+
+	Cvar<float> ts("timescale", [](const float& f) {Time::getInstance()->setTimeScale(f);}, []() { return Time::getInstance()->getTimeScale();});
+	CvarManager::getInstance()->registerCvar(&ts);
 
 	return true;
 }

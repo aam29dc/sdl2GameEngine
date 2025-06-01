@@ -11,6 +11,7 @@ class MenuState : public GameState {
 private:
 public:
 	MenuState(Window* window, GameStateMachine* GSM) : GameState(window, GSM, "Menu") {}
+	~MenuState();
 
 	static void UIButtonPlay(void* ctx);
 

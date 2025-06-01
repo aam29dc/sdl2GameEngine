@@ -16,6 +16,7 @@ protected:
 	std::string id;
 public:
 	GameState(Window* window, GameStateMachine* GSM = nullptr, const std::string& id = "");
+	virtual ~GameState() {}
 	virtual void handleEvents();
 
 	virtual void update(SoundManager* soundManager);

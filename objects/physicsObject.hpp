@@ -24,7 +24,7 @@ public:
 
 	static size_t getInstanceCount();
 
-	virtual void draw(Renderer* renderer, const Camera& camera) const override;
+	virtual void draw(Renderer* renderer, const Camera& camera, const bool& iso = false) const override;
 	virtual void update(const float dt) override;
 	virtual void clean() override;
 

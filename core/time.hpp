@@ -33,4 +33,7 @@ public:
 
 	void setDt();
 	float getDt() const;
+
+	void setTimeScale(const float& value);
+	float getTimeScale() const;
 };

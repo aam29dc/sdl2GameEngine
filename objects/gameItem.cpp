@@ -1,4 +1,5 @@
 #include "gameItem.hpp"
+#include "objects/SDLGameObject.hpp"
 
 //SDLGameObject(const size_t& textureID, const Float2& pos, const Int2& srcPos, const bool& isStatic, const bool& isHover)
 GameItem::GameItem(const size_t& textureID, const Float2& pos, const Int2& srcPos, ItemType type) : 
@@ -9,6 +10,8 @@ GameItem::GameItem(const size_t& textureID, const Float2& pos, const Int2& srcPo
 	this->type = type;
 	pickedUp = false;
 	collidable = false;
+
+	std::cout << type << "\n";
 }
 
 GameItem::~GameItem() {

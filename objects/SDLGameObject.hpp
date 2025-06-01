@@ -22,7 +22,7 @@ public:
 	SDLGameObject(const size_t& textureID = 0, const Float2& pos = { 0, 0 }, const Int2& srcPos = { 0, 0 }, const bool isStatic = true, const bool isHover = false);
 	virtual ~SDLGameObject();
 
-	virtual void draw(Renderer* renderer, const Camera& camera) const override;
+	virtual void draw(Renderer* renderer, const Camera& camera, const bool& iso = false) const override;
 	virtual void update(const float dt);
 
 	const Int2& getSrcPos() const;

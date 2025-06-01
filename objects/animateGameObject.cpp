@@ -16,7 +16,7 @@ AnimateGameObject::~AnimateGameObject() {
 
 }
 
-void AnimateGameObject::draw(Renderer* renderer, const Camera& camera) const {
+void AnimateGameObject::draw(Renderer* renderer, const Camera& camera, const bool& iso) const {
 	//draw frame
 	int x = ((frame % frameCols) * (int)size.x) + (frame % frameCols) + 1;
 	int y = (int(frame / frameCols) * (int)size.y) + int(frame / frameCols) + 1;
@@ -28,6 +28,7 @@ void AnimateGameObject::draw(Renderer* renderer, const Camera& camera) const {
 
 	SDL_FRect dst = { pos.x, pos.y - hover, (float)size.x, (float)size.y };
 	dst = camera.worldToView(dst);
+	if (iso) dst = renderer->viewToIso(dst);
 	renderer->draw(textureID, { x,y, (int)size.x, (int)size.y }, dst);
 
 }

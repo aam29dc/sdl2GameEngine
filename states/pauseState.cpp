@@ -16,6 +16,11 @@ void PauseState::handleEvents() {
 	}
 }
 
+PauseState::~PauseState() {
+	if (UI) delete UI;
+	UI = nullptr;
+}
+
 void PauseState::UIButtonRestart(void* ctx) {
 	auto* state = static_cast<PauseState*>(ctx);
 	state->GSM->getSoundManager()->push("click");
@@ -33,9 +38,9 @@ void PauseState::UIButtonMainMenu(void* ctx) {
 bool PauseState::onEnter(Renderer* renderer, SoundManager* soundManager) {
 	std::cout << "Entering pause state\n";
 	UI->addElement(new UIElement({ 0, 0, vScreen::vWidth, vScreen::vHeight }, { 0, 0, 0, 55 }, true));
-	UI->addElement(new UILabel({ 0, 0, 120, 25 }, { 0,255,0,255 }, true, "Game Paused."));
-	UI->addElement(new UIButton({ 0,25, 100, 20 }, { 255, 255, 255, 255 }, true, "Restart", UIButtonRestart, this));
-	UI->addElement(new UIButton({ 0,50, 100, 20 }, { 255, 255, 255, 255 }, true, "Main Menu", UIButtonMainMenu, this));
+	UI->addElement(new UILabel({ 0, 0, 120, 25 }, Color::Green, "Game Paused.", true));
+	UI->addElement(new UIButton({ 0,25, 100, 20 }, Color::White, "Restart", UIButtonRestart, this, true));
+	UI->addElement(new UIButton({ 0,50, 100, 20 }, Color::White, "Main Menu", UIButtonMainMenu, this, true));
 
 	return true;
 }

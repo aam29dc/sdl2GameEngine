@@ -10,7 +10,6 @@ private:
 	Window* window;
 	Renderer* renderer;
 	SoundManager* soundManager;
-
 	GameStateMachine* gameStateMachine;
 public:
 	Game();

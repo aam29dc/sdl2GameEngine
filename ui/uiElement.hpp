@@ -1,11 +1,10 @@
 #pragma once
-
 #include "core/renderer.hpp"
-
 #include "managers/fontManager.hpp"
 #include "enums/virtualScreen.hpp"
-
+#include "enums/color.hpp"
 #include <vector>
+#include <iostream>
 
 class UIElement {
 protected:
@@ -16,19 +15,33 @@ protected:
 	SDL_Color textColor;
 	bool centered;
 	bool visible;
+	size_t id;
+	std::string name;
+	inline static size_t instanceCount = 0;
 public:
 	UIElement(const SDL_FRect& rect = { 0 },
-		const SDL_Color& color = { 0,0,0,155 },
-		const float centered = false);
-	virtual ~UIElement(){}
+		const SDL_Color& color = Color::Shade,
+		const bool centered = false,
+		const std::string& name = "");
+
+	virtual ~UIElement() { 
+		--instanceCount;
+		std::cout << "Deconstructor called.\n";
+		std::cout << "iC:" << instanceCount << "\n";
+	}
 
 	SDL_FRect getScaledPos(const SDL_FRect& rect, const unsigned int windowWidth, const unsigned int windowHeight) const;
 
 	virtual void update(const SDL_FPoint& mousePos = { 0,0 }, const bool clicked = false, const unsigned int windowWidth = 0, const unsigned int windowHeight = 0) {};
 	virtual void draw(Renderer* renderer, const unsigned int windowWidth, const unsigned int windowHeight) const;
 
-	void setVisible(const bool set);
+	void toggleVisible();
 	bool getVisible() const;
+
+	size_t getID() const;
+	void setID(const size_t& val);
+
+	const std::string& getName() const;
 };
 
 class UILabel : public UIElement {
@@ -36,12 +49,29 @@ protected:
 	std::string text;
 public:
 	UILabel(const SDL_FRect& rect = { 0 },
-		const SDL_Color& color = { 0,0,0,155 },
-		const float centered = false,
-		const std::string& text = "");
+		const SDL_Color& color = Color::Shade,
+		const std::string& text = "",
+		const bool centered = false);
 	virtual ~UILabel() {}
 
 	virtual void draw(Renderer* renderer, const unsigned int windowWidth, const unsigned int windowHeight) const;
+};
+
+class UITextBox : public UIElement {
+protected:
+	std::vector<std::string> lines;
+	int index;
+public:
+	UITextBox(const SDL_FRect& rect = { 0 },
+		const SDL_Color& color = Color::Shade,
+		const bool centered = false, const std::string& name = "TextBox");
+	virtual ~UITextBox() {}
+
+	virtual void draw(Renderer* renderer, const unsigned int windowWidth, const unsigned int windowHeight) const;
+	virtual void endLine();
+	virtual void addLine(const std::string& text);
+	virtual void addChar(const std::string& ch);
+	virtual void changeIndex(const int val);
 };
 
 class UIButton : public UIElement {
@@ -58,16 +88,35 @@ protected:
 	void* context;
 public:
 	UIButton(const SDL_FRect& rect = { 0 },
-		const SDL_Color& color = { 0,0,0,155 },
-		const float centered = false,
+		const SDL_Color& color = Color::Shade,
 		const std::string& text = "",
 		void (*callback)(void*) = nullptr,
-		void* context = nullptr);
+		void* context = nullptr,
+		const bool centered = false);
 
 	virtual ~UIButton(){}
 
 	virtual void update(const SDL_FPoint& mousePos, const bool clicked, const unsigned int windowWidth, const unsigned int windowHeight) override;
 	virtual void draw(Renderer* renderer, const unsigned int windowWidth, const unsigned int windowHeight) const override;
+};
+
+class UITexture : public UIButton {
+protected:
+	size_t textureID;
+	SDL_Rect src;
+public:
+	UITexture(const SDL_FRect& rect = { 0 },
+		const size_t& id = 0,
+		const SDL_Rect& src = {0},
+		const SDL_Color& color = Color::Shade,
+		void (*callback)(void*) = nullptr,
+		void* context = nullptr,
+		const bool centered = false);
+	virtual ~UITexture() {}
+
+	virtual void draw(Renderer* renderer, const unsigned int windowWidth, const unsigned int windowHeight) const override;
+
+	void setSrc(const SDL_Rect& src);
 };
 
 template<typename C, typename T>
@@ -79,12 +128,12 @@ protected:
 	std::vector<T(*)(T)> evaluators;
 public:
 	UIText(const SDL_FRect& rect = { 0 },
-		const SDL_Color& color = { 0,0,0,155 },
-		const float centered = false,
+		const SDL_Color& color = Color::Shade,
 		const C* instance = nullptr,
 		const std::vector<std::string>& strings = {},
 		const std::vector<T(C::*)() const>& valueFuncs = {},
-		const std::vector<T(*)(T)>& evalFuncs = {})
+		const std::vector<T(*)(T)>& evalFuncs = {},
+		const bool centered = false)
 		: UIElement(rect, color, centered), instance(instance), strs(strings), values(valueFuncs), evaluators(evalFuncs) {
 	}
 
@@ -124,11 +173,11 @@ private:
 	T (C::*maxResource)() const;
 public:
 	UIResource(const SDL_FRect& rect = { 0 },
-		const SDL_Color& color = { 0,0,0,155 },
-		const float centered = false,
+		const SDL_Color& color = Color::Shade,
 		const C* instance = nullptr,
 		T (C::* resource)() const = nullptr,
-		T (C::* maxResource)() const = nullptr) : UIElement(rect, color, centered) {
+		T (C::* maxResource)() const = nullptr,
+		const bool centered = false) : UIElement(rect, color, centered) {
 			this->instance = instance;
 			this->resource = resource;
 			this->maxResource = maxResource;

@@ -2,9 +2,9 @@
 #include "core/renderer.hpp"
 #include "core/camera.hpp"
 #include "actors/player.hpp"
+#include "ui/uiElement.hpp"
 
-Npc::Npc(const Float2& pos) :
-	Actor(pos)
+Npc::Npc(const Float2& pos, UITextBox* const combatlog) : Actor(pos, combatlog)
 {
 	weapons = { Weapon("Bow", 0.5f, 200.0f, 4.0f, 15, 1), Weapon("Melee", 0.5f, 10.0f, 32.0f, 20) };
 	weapons[0].setProjectileColor({ 255, 255/4, 0, 255 });
@@ -124,4 +124,9 @@ void Npc::setPos(const Float2& pos) {
 
 float Npc::getLosRadius() const {
 	return aggroRadius;
+}
+
+void Npc::takeDamage(const int damage) {
+	health -= damage;
+	combatlog->addLine("You did " + std::to_string(damage) + " damage to Enemy.");
 }

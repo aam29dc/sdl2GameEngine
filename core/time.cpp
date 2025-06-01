@@ -74,3 +74,11 @@ void Time::setDt() {
 float Time::getDt() const {
 	return dt;
 }
+
+void Time::setTimeScale(const float& value) {
+	timescale = value;
+}
+
+float Time::getTimeScale() const {
+	return timescale;
+}

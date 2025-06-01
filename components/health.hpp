@@ -5,7 +5,8 @@ protected:
 	int health;
 	int maxHealth;
 public:
-	void takeDamage(const int damage);
+	virtual ~Health() {}
+	virtual void takeDamage(const int damage);
 	bool isDead() const;
 
 	void setHealth(const int health);

@@ -1,6 +1,6 @@
 #include "tile.hpp"
 
-Tile::Tile(const Int2& src, const Int2& dst, const bool walkable, const bool visible) {
+Tile::Tile(const Int2& src, const Float2& dst, const bool walkable, const bool visible) {
 	this->src = src;
 	this->dst = dst;
 	this->walkable = walkable;
@@ -15,11 +15,11 @@ const Int2& Tile::getSrc() const {
 	return src;
 }
 
-const Int2& Tile::getDst() const {
+const Float2& Tile::getDst() const {
 	return dst;
 }
 
-const void Tile::setDst(const Int2& dst) {
+const void Tile::setDst(const Float2& dst) {
 	this->dst = dst;
 }
 

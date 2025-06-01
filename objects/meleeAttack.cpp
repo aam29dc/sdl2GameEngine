@@ -21,9 +21,10 @@ MeleeAttack::~MeleeAttack() {
 
 }
 
-void MeleeAttack::draw(Renderer* renderer, const Camera& camera) const {
+void MeleeAttack::draw(Renderer* renderer, const Camera& camera, const bool& iso) const {
 	Float2 newPos = pos;
 	newPos = camera.worldToView(newPos);
+	if (iso) newPos = renderer->viewToIso(newPos);
 	newPos = renderer->scale(newPos);
 	circleRGBA(renderer->sdlRenderer, (Sint16)newPos.x, (Sint16)newPos.y, (Sint16)radius, 255, 255, 0, 255);
 }

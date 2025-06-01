@@ -18,7 +18,7 @@ float Light::getZ() const {
 	return z;
 }
 
-void Light::drawShadows(Renderer* renderer, const std::vector<SDLGameObject*>& objects, const Camera& camera) {
+void Light::drawShadows(Renderer* renderer, const std::vector<SDLGameObject*>& objects, const Camera& camera, const bool& iso) {
 	for (const auto& obj : objects) {
 		float dz = 1.0f - z;
 		float dx = 0.0f;
@@ -53,6 +53,7 @@ void Light::drawShadows(Renderer* renderer, const std::vector<SDLGameObject*>& o
 		}
 
 		shadow = camera.worldToView(shadow);
+		if (iso) shadow = renderer->viewToIso(shadow);
 		shadow = renderer->scale(shadow);
 		SDL_SetRenderDrawColor(renderer->sdlRenderer, 0, 0, 0, (Uint8)(60/intensity));
 		SDL_RenderFillRectF(renderer->sdlRenderer, &shadow);

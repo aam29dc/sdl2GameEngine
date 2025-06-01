@@ -8,12 +8,15 @@ class MeleeAttack;
 class Projectile;
 class SDLGameObject;
 class Actor;
-class Player;
+#include "actors/player.hpp"
 class Npc;
 class Camera;
 struct SaveData;
+class UITextBox;
+class Binds;
 
 #include <vector>
+#include <array>
 
 class PlayState : public GameState {
 private:
@@ -25,12 +28,18 @@ private:
 	std::vector<Npc*> npcs;
 	Player* player;
 
+	std::array<size_t, Player::inventoryCapacity> bagIDs = { 0 };
+	bool inventoryVisible;
+
 	std::vector<Projectile*> projectiles;
 	std::vector<MeleeAttack*> swings;
 
 	Camera* camera;
+	UITextBox* combatlog;
 
 	float timer;
+
+	Binds* binds;
 public:
 	PlayState(Window* window, GameStateMachine* GSM);
 	~PlayState();
@@ -45,6 +54,9 @@ public:
 	inline void refreshAllObjects();
 
 	void loadTextures(Renderer* renderer);
+	void loadInventory(Renderer* renderer);
+
+	bool showInventory();
 
 	bool onEnter(Renderer* renderer, SoundManager* soundManager);
 	bool onExit(SoundManager* soundManager);

@@ -311,7 +311,7 @@ void Collision::checkProjectileCollisions(const float dt, std::vector<Projectile
         if (projectiles[i]->getBounces() >= projectiles[i]->getMaxBounces()) continue;
 
         for (size_t j = 0; j < objects.size(); ++j) {
-            if (projectiles[i]->getOwner() == objects[j]) continue; // 983
+            if (projectiles[i]->getOwner() == objects[j]) continue;
 
             // Early out from sort
             if (projectiles[i]->getPos().x + projectiles[i]->getWidth() < objects[j]->getPos().x) break;

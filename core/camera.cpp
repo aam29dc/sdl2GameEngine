@@ -62,10 +62,9 @@ void Camera::setPosition(const Float2& pos) {
 }
 
 void Camera::follow(const Float2& targetPos) {
-	view.x = targetPos.x - view.w / (2.0f * zoom);
-	view.y = targetPos.y - view.h / (2.0f * zoom);
+	view.x = targetPos.x - (view.w / (2.0f * zoom));
+	view.y = targetPos.y - (view.h / (2.0f * zoom));
 }
-
 
 const SDL_FRect& Camera::getView() const {
 	return view;

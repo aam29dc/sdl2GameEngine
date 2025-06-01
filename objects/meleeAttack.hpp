@@ -24,7 +24,7 @@ public:
 	MeleeAttack(const Float2& pos, const float angle, const float arc, const float radius, const int damage, const float startTime, SDLGameObject* owner);
 	virtual ~MeleeAttack();
 
-	void draw(Renderer* renderer, const Camera& camera) const;
+	void draw(Renderer* renderer, const Camera& camera, const bool& iso = false) const;
 
 	const Float2& getPos() const;
 	float getRadius() const;

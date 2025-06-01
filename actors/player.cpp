@@ -1,11 +1,13 @@
 #include "player.hpp"
 #include "core/input.hpp"
 #include "core/camera.hpp"
+#include "ui/uiElement.hpp"
+#include "core/binds.hpp"
 
-Player::Player(const Float2& pos) : Actor(pos),
+Player::Player(const Float2& pos, UITextBox* const combatlog, Binds* const binds, UITextBox* const console) : Actor(pos, combatlog),
 	inventory({ ItemType::Empty })
 {
-	weapons = { Weapon("Bow", 0.1f, 450.0f, 4.0f, 25, 3), Weapon("Melee", 0.5f, 10.0f, 32.0f, 20) };
+	weapons = { Weapon("Bow", 0.1f, 450.0f, 4.0f, 25, 2), Weapon("Melee", 0.5f, 10.0f, 32.0f, 20) };
 	weapons[0].setProjectileColor({ 255, 255, 0, 175 });
 
 	weapons[0].setSfx("sfx_shoot");
@@ -16,6 +18,12 @@ Player::Player(const Float2& pos) : Actor(pos),
 
 	isNPC = false;
 	isPlayer = true;
+
+	speedTime = 0.0f;
+	speedActive = false;
+
+	this->binds = binds;
+	this->console = console;
 }
 
 Player::~Player() {
@@ -23,52 +31,80 @@ Player::~Player() {
 }
 
 void Player::update(const float dt, const Camera& camera) {
+	if (speedActive && speedTime < ItemEffects::SpeedDuration) speedTime += dt;
+	else {
+		speed = MOVESPEED;
+		speedActive = false;
+	}
+
 	Actor::update(dt);
 	angle = posToAngle(mousePos, camera);
 }
 
-bool Player::pickupItem(const ItemType item) {
+int Player::pickupItem(const ItemType item) {
 	//check storage before pickup
 	size_t space = 0;
 	for (int i = 0; i < inventory.size(); ++i) {
 		if (inventory[i].getType() != ItemType::Empty) ++space;
 	}
 
-	if (space >= inventoryCapacity) return false;
+	if (space >= inventoryCapacity) return -1;
 
-	for (int i = 0; i < inventory.size(); ++i) {
-		if (inventory[i].getType() == ItemType::Empty) {
-			inventory[i] = item;
+	int index = 0;
+	for (; index < inventory.size(); ++index) {
+		if (inventory[index].getType() == ItemType::Empty) {
+			inventory[index] = item;
+			if (combatlog) {
+				combatlog->addLine("You picked up a " + to_string(item) + ".");
+			}
 			break;
 		}
 	}
 
-	return true;
+	return index;
 }
 
 bool Player::useItem(const size_t item) {
+	bool usedItem = false;
+	ItemType type = ItemType::Empty;
+
 	switch (inventory.at(item).getType()) {
-	case ItemType::Empty:
-	default:
-		return false;
 	case ItemType::LesserHeal:
 		if (health < maxHealth) {
 			health = std::min(maxHealth, health + ItemEffects::LesserHeal);
 			inventory[item] = InventoryItem();
-			return true;
+			type = ItemType::LesserHeal;
+			usedItem = true;
 		}
 		break;
 	case ItemType::Heal:
 		if (health < maxHealth) {
 			health = std::min(maxHealth, health + ItemEffects::Heal);
 			inventory[item] = InventoryItem();
-			return true;
+			type = ItemType::Heal;
+			usedItem = true;
 		}
 		break;
 	case ItemType::Mana:
 		return false;
 	case ItemType::Speed:
+		if (!speedActive) {
+			speed *= ItemEffects::SpeedMultiplier;
+			speedTime = 0.0f;
+			speedActive = true;
+			inventory[item] = InventoryItem();
+			type = ItemType::Speed;
+			usedItem = true;
+		}
+		break;
+	case ItemType::Empty: default:
+		std::cout << "used empty.\n";
 		return false;
+	}
+
+	if (usedItem) {
+		combatlog->addLine("You used a " + to_string(type) + ".");
+		return true;
 	}
 
 	return false;
@@ -102,28 +138,23 @@ float Player::posToAngle(const SDL_FPoint& mouseScreenPos, const Camera& camera)
 	return std::atan2(dy, dx);
 }
 
-/*
-	Gather player input (as binds), interpret the binds according to commands, then send to player update
-*/
 void Player::input(const SDL_FPoint& mousePos) {
-	/* for now there is permanent binds	*/
-
-	if (Input::getInputHandler()->isKeyDown(SDL_SCANCODE_W)) {
-		commandQueue.push(Commands::FORWARD);
-	}
-	if (Input::getInputHandler()->isKeyDown(SDL_SCANCODE_S)) {
-		commandQueue.push(Commands::BACKWARD);
-	}
-
-	if (Input::getInputHandler()->isKeyDown(SDL_SCANCODE_A)) {
-		commandQueue.push(Commands::LEFTWARD);
-	}
-	if (Input::getInputHandler()->isKeyDown(SDL_SCANCODE_D)) {
-		commandQueue.push(Commands::RIGHTWARD);
-	}
-
-	if (Input::getInputHandler()->getMouseButtonState(LEFT)) {
-		commandQueue.push(Commands::ATTACKONE);
+	if (!console->getVisible()) {
+		if (Input::getInputHandler()->isKeyDown(binds->getMoveBind(Movement::FORWARD).key)) {
+			commandQueue.push(Commands::FORWARD);
+		}
+		if (Input::getInputHandler()->isKeyDown(binds->getMoveBind(Movement::BACKWARD).key)) {
+			commandQueue.push(Commands::BACKWARD);
+		}
+		if (Input::getInputHandler()->isKeyDown(binds->getMoveBind(Movement::LEFTWARD).key)) {
+			commandQueue.push(Commands::LEFTWARD);
+		}
+		if (Input::getInputHandler()->isKeyDown(binds->getMoveBind(Movement::RIGHTWARD).key)) {
+			commandQueue.push(Commands::RIGHTWARD);
+		}
+		if (Input::getInputHandler()->getMouseButtonState(binds->getCombatBind(Combat::ATTACKONE).mouseButton)) {
+			commandQueue.push(Commands::ATTACKONE);
+		}
 	}
 	
 	this->mousePos = mousePos;
@@ -135,4 +166,9 @@ void Player::setExp(const unsigned int exp) {
 
 unsigned int Player::getExp() const {
 	return exp;
+}
+
+void Player::takeDamage(const int damage) {
+	health -= damage;
+	combatlog->addLine("You took " + std::to_string(damage) + " damage.");
 }

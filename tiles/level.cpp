@@ -9,6 +9,8 @@
 #include "actors/npc.hpp"
 #include "objects/gameItem.hpp"
 #include "utils/fileUtils.hpp"
+#include "utils/levelUtils.hpp"
+#include "enums/color.hpp"
 #include <iostream>
 #include <fstream>
 #include <algorithm>
@@ -17,7 +19,7 @@ Level::Level(const size_t mapWidth, const size_t mapHeight) : light({ 0,0 }, 15)
 	this->mapWidth = mapWidth;
 	this->mapHeight = mapHeight;
 
-	bgColor = { 0, 0, 0, 255 };
+	bgColor = Color::Black;
 
 	textureID.bg = 0;
 	textureID.ground = 0;
@@ -45,185 +47,173 @@ bool Level::load(
 	const std::string& bgLevel, const std::string& bgImg,
 	const std::string& groundLevel, const std::string& groundImg,
 	const std::string& objectsLevel, const std::string& objectsImg,
-	const std::string& itemsLevel, const std::string& itemsImg){
+	const std::string& itemsLevel, const std::string& itemsImg, const bool& iso){
 
 	TextureManager* tm = TextureManager::getInstance();
-	if (!tm->load(renderer, textureID.bg, bgImg)) return false;
-	if (!tm->load(renderer, textureID.ground, groundImg)) return false;
-	if (!tm->load(renderer, textureID.object, objectsImg)) return false;
-	if (!tm->load(renderer, textureID.item, itemsImg)) return false;
+	if (bgLevel!="" && !tm->load(renderer, textureID.bg, bgImg)) return false;
+	if (groundLevel!="" && !tm->load(renderer, textureID.ground, groundImg)) return false;
+	if (objectsLevel!="" && !tm->load(renderer, textureID.object, objectsImg)) return false;
+	if (itemsLevel!="" && !tm->load(renderer, textureID.item, itemsImg)) return false;
 
-	std::ifstream bgFile(bgLevel);
-	if (!bgFile.is_open()) {
-		std::cout << "Failed to open: " << bgLevel << "." << std::endl;
-		return false;
+	int tileWidth = Tile::WIDTH;
+	int tileHeight = Tile::HEIGHT;
+
+	if (iso) {
+		tileWidth = Tile::ISOWIDTH;
+		tileHeight = Tile::ISOHEIGHT;
 	}
 
 	char ch = 0;
 	int row = 0;
 	int col = 0;
 
-	while (bgFile.get(ch)) {
-		if ('0' <= ch && 'o' >= ch) {
-			bgTiles.emplace_back(Tile(convertToSrc(ch, { Tile::WIDTH, Tile::HEIGHT }, Tile::MARGIN),
-				{0, 0 }, false, true)	// bg tiles repeat in sequence
-			);
+	if (bgLevel != "") {
+		std::ifstream bgFile(bgLevel);
+		if (!bgFile.is_open()) {
+			std::cout << "Failed to open: " << bgLevel << "." << std::endl;
+			return false;
+		}
+
+		while (bgFile.get(ch)) {
+			if ('0' <= ch && 'o' >= ch) {
+				bgTiles.emplace_back(Tile(convertToSrc(ch, { tileWidth, tileHeight }, Tile::MARGIN),
+					{ 0, 0 }, false, true)	// bg tiles repeat in sequence
+				);
+			}
 		}
 	}
 
-	std::ifstream groundFile(groundLevel);
-	if (!groundFile.is_open()) {
-		std::cout << "Failed to open: " << groundLevel << "." << std::endl;
-		return false;
-	}
-
-	ch = 0;
-	row = 0;
-	col = 0;
-
-	while (groundFile.get(ch)) {
-		if ('0' <= ch && 'o' >= ch) {
-			groundTiles.emplace_back(Tile(convertToSrc(ch, {Tile::WIDTH, Tile::HEIGHT}, Tile::MARGIN),
-				{col * Tile::WIDTH, row * Tile::HEIGHT})
-			);
-			++col;
+	if (groundLevel != "") {
+		std::ifstream groundFile(groundLevel);
+		if (!groundFile.is_open()) {
+			std::cout << "Failed to open: " << groundLevel << "." << std::endl;
+			return false;
 		}
-		else if (ch == ' ') { // allows our groundTiles vector to correspond to position in world
-			groundTiles.push_back(Tile(convertToSrc(ch,	{ Tile::WIDTH, Tile::HEIGHT }, Tile::MARGIN),
-				{ col * Tile::WIDTH, row * Tile::HEIGHT },
-				false, false)
-			);
-			++col;
-		}
-		else if (ch == ',') {
-			if (vectorMaxCols <= (unsigned)col) vectorMaxCols = (unsigned)col;	// the grounds file sets our max cols for the other files
-			col = 0;
-			++row;
-		}
-	}
 
-	std::ifstream objectsFile(objectsLevel);
-	if (!objectsFile.is_open()) {
-		std::cout << "Failed to open: " << objectsLevel << "." << std::endl;
-	}
+		ch = 0;
+		row = 0;
+		col = 0;
 
-	ch = 0;
-	row = 0;
-	col = 0;
-
-	/* (We could: insert col, row into our objects for indexing) */
-	while (objectsFile.get(ch)) {
-		if ('0' <= ch && 'o' >= ch) {
-			objects.emplace_back(new Destructible(
-				textureID.object,
-				{ (float)col * SDLGameObject::SIZE, (float)row * SDLGameObject::SIZE },
-				convertToSrc(ch, { SDLGameObject::SIZE, SDLGameObject::SIZE }, SDLGameObject::MARGIN),
-				true, false)
-			);
-			++col;
-		}
-		else if (ch == ' ') {
-			++col;
-		}
-		else if (ch == ',') {
-			col = 0;
-			++row;
+		while (groundFile.get(ch)) {
+			if ('0' <= ch && 'o' >= ch) {
+				groundTiles.emplace_back(Tile(convertToSrc(ch, { tileWidth, tileHeight }, Tile::MARGIN),
+					{ (float)col * Tile::WIDTH, (float)row * Tile::HEIGHT })
+				);
+				++col;
+			}
+			else if (ch == ' ') { // allows our groundTiles vector to correspond to position in world
+				groundTiles.push_back(Tile(convertToSrc(ch, { tileWidth, tileHeight }, Tile::MARGIN),
+					{ (float)col * Tile::WIDTH, (float)row * Tile::HEIGHT },
+					false, false)
+				);
+				++col;
+			}
+			else if (ch == ',') {
+				if (vectorMaxCols <= (unsigned)col) vectorMaxCols = (unsigned)col;	// the grounds file sets our max cols for the other files
+				col = 0;
+				++row;
+			}
 		}
 	}
 
-	std::ifstream itemsFile(itemsLevel);
-	if (!itemsFile.is_open()) {
-		std::cout << "Failed to open: " << itemsLevel << "." << std::endl;
+	if (objectsLevel != "") {
+		std::ifstream objectsFile(objectsLevel);
+		if (!objectsFile.is_open()) {
+			std::cout << "Failed to open: " << objectsLevel << "." << std::endl;
+		}
+
+		ch = 0;
+		row = 0;
+		col = 0;
+
+		/* (We could: insert col, row into our objects for indexing) */
+		while (objectsFile.get(ch)) {
+			if ('0' <= ch && 'o' >= ch) {
+				objects.emplace_back(new Destructible(
+					textureID.object,
+					{ (float)col * SDLGameObject::SIZE, (float)row * SDLGameObject::SIZE },
+					convertToSrc(ch, { SDLGameObject::SIZE, SDLGameObject::SIZE }, SDLGameObject::MARGIN),
+					true, false)
+				);
+				++col;
+			}
+			else if (ch == ' ') {
+				++col;
+			}
+			else if (ch == ',') {
+				col = 0;
+				++row;
+			}
+		}
 	}
 
-	ch = 0;
-	row = 0;
-	col = 0;
+	if (itemsLevel != "") {
+		std::ifstream itemsFile(itemsLevel);
+		if (!itemsFile.is_open()) {
+			std::cout << "Failed to open: " << itemsLevel << "." << std::endl;
+		}
 
-	/* BUG: currently doesn't get the src for the ch */
-	while (itemsFile.get(ch)) {
-		if ('0' <= ch && '4' >= ch) {
-			items.emplace_back(new GameItem(
-				textureID.item,
-				{ (float)col * SDLGameObject::SIZE, (float)row * SDLGameObject::SIZE },
-				convertToItemSrc(ch, { SDLGameObject::SIZE, SDLGameObject::SIZE }, SDLGameObject::MARGIN),
-				(ItemType)(ch - 48))
-			);
-			++col;
-		}
-		else if (ch == ' ') {
-			++col;
-		}
-		else if (ch == ',') {
-			col = 0;
-			++row;
+		ch = 0;
+		row = 0;
+		col = 0;
+
+		/* BUG: currently doesn't get the src for the ch */
+		while (itemsFile.get(ch)) {
+			if ('0' <= ch && '4' >= ch) {
+				items.emplace_back(new GameItem(
+					textureID.item,
+					{ (float)col * SDLGameObject::SIZE, (float)row * SDLGameObject::SIZE },
+					convertToItemSrc(ch, { SDLGameObject::SIZE, SDLGameObject::SIZE }, SDLGameObject::MARGIN),
+					(ItemType)(ch - 48))
+				);
+				++col;
+			}
+			else if (ch == ' ') {
+				++col;
+			}
+			else if (ch == ',') {
+				col = 0;
+				++row;
+			}
 		}
 	}
 
 	return true;
 }
 
-const Int2 Level::convertToItemSrc(const char ch, const Int2& size, const int margin) const {
-	// 0 to 4 (lesser heal, major heal, mana potion, swiftness potion
-	// each row a differnt item
-	int c = ch - 48;
+/*
+	BUG: ground tiles don't properly render when zoomed in/out
+*/
 
-	int row = c / 8;
+void Level::draw(Renderer* renderer, Player* player, const std::vector<Npc*>& npc, const Camera& camera, const bool& iso, const float& angle) {
+	int tileWidth = Tile::WIDTH;
+	int tileHeight = Tile::HEIGHT;
 
-	return {1, (size.y * row) + (row * margin) + 1	};
-}
-
-const Int2 Level::convertToSrc(const char ch, const Int2& size, const int margin) const {
-	// (48) 0 - 9, :, ;, <, =, >, ?, @, A-O (111)
-	int c = ch - 48;
-
-	int row = c / 8;
-	int col = c % 8;
-
-	return {
-		(size.x * col) + (col * margin) + 1,
-		(size.y * row) + (row * margin) + 1
-	};
-}
-
-void Level::drawMap(Renderer* renderer, const Player* player, const Camera& camera, const float scale) const {
-	SDL_Rect src = { 0, 0, Tile::WIDTH, Tile::HEIGHT };
-	SDL_FRect dst = { 0, 0, Tile::WIDTH * scale, Tile::HEIGHT * scale };
-
-	for (auto it = groundTiles.cbegin(); it != groundTiles.cend(); ++it) {
-		src.x = it->getSrc().x;
-		src.y = it->getSrc().y;
-		dst.x = (float)it->getDst().x * scale;
-		dst.y = (float)it->getDst().y * scale;
-		dst = camera.worldToView(dst);
-		renderer->draw(textureID.ground, src, dst);
+	if (iso) {
+		tileWidth = Tile::ISOWIDTH;
+		tileHeight = Tile::ISOHEIGHT;
 	}
 
-	for (auto it = objects.cbegin(); it != objects.cend(); ++it) {
-		(*it)->draw(renderer, camera);
-	}
-
-	player->draw(renderer, camera);
-}
-
-void Level::draw(Renderer* renderer, Player* player, const std::vector<Npc*>& npc, const Camera& camera) {
-	SDL_Rect src = { 0, 0, Tile::WIDTH, Tile::HEIGHT };
-	SDL_FRect dst = { 0, 0, Tile::WIDTH, Tile::HEIGHT };
+	SDL_Rect src = { 0, 0, tileWidth, tileHeight };
+	SDL_FRect dst = { 0, 0, static_cast<float>(Tile::WIDTH), static_cast<float>(Tile::HEIGHT) };
 
 	//draw ground first
 	for (auto it = groundTiles.cbegin(); it != groundTiles.cend(); ++it) {
 		if (!it->getVisible()) continue;	// if invisible skip draw
 		src.x = it->getSrc().x;
 		src.y = it->getSrc().y;
-		dst.x = (float)it->getDst().x;
-		dst.y = (float)it->getDst().y;
+		dst.x = static_cast<float>(it->getDst().x);
+		dst.y = static_cast<float>(it->getDst().y);
 
 		dst = camera.worldToView(dst);
-		renderer->draw(textureID.ground, src, dst);
+
+		if (iso) dst = renderer->viewToIso(dst);
+
+		renderer->draw(textureID.ground, src, dst, false, angle*180.0f/(float)M_PI);
 	}
 
 	//cast shadows
-	light.drawShadows(renderer, objects, camera);
+	light.drawShadows(renderer, objects, camera, iso);
 
 	//add objects, player, npcs, gameitems to one container
 	std::vector<SDLGameObject*> sortedObjects = objects;
@@ -239,25 +229,38 @@ void Level::draw(Renderer* renderer, Player* player, const std::vector<Npc*>& np
 		});
 
 	for (auto it = sortedObjects.cbegin(); it != sortedObjects.cend(); ++it) {
-		(*it)->draw(renderer, camera);
+		(*it)->draw(renderer, camera, iso);
 	}
 }
 
-void Level::drawBackground(Renderer* renderer, const Camera& camera) const {
+/*
+	FIX: iso render
+*/
+void Level::drawBackground(Renderer* renderer, const Camera& camera, const bool& iso) const {
+	int tileWidth = Tile::WIDTH;
+	int tileHeight = Tile::HEIGHT;
+
+	if (iso) {
+		tileWidth = Tile::ISOWIDTH;
+		tileHeight = Tile::ISOHEIGHT;
+	}
 	//repeat sequence of tiles
-	SDL_Rect src = { 0, 0, Tile::WIDTH, Tile::HEIGHT };
-	SDL_FRect dst = { 0, 0, Tile::WIDTH, Tile::HEIGHT };
+	SDL_Rect src = { 0, 0, tileWidth, tileHeight };
+	SDL_FRect dst = { 0, 0, (float)tileWidth, (float)tileHeight };
 	Int2 size = { (int)camera.getCamSize().x, (int)camera.getCamSize().y };
 
+	if (bgTiles.size() <= 0) return;
+
 	int index = 0;
-	for (int y = 0; y < size.y; y += Tile::HEIGHT) {
-		for (int x = 0; x < size.x; x += Tile::WIDTH) {
+	for (int y = 0; y < size.y; y += tileHeight) {
+		for (int x = 0; x < size.x; x += tileWidth) {
 			if (index >= bgTiles.size()) index = 0;
 			src.x = bgTiles[index].getSrc().x;
 			src.y = bgTiles[index].getSrc().y;
 			dst.x = (float)x;
 			dst.y = (float)y;
 
+			if (iso) dst = renderer->viewToIso(dst);
 			renderer->draw(textureID.bg, src, dst);
 			index++;
 		}

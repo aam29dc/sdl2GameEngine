@@ -21,7 +21,7 @@ void GameStateMachine::queueChange(GameState* state) {
 void GameStateMachine::queuePop() {
 	transitions.push({ TransitionType::Pop, nullptr });
 }
-
+#include <iostream>
 void GameStateMachine::processTransitions() {
 	while (!transitions.empty()) {
 		auto& t = transitions.front();
@@ -39,6 +39,7 @@ void GameStateMachine::processTransitions() {
 				if (gameStates.back()->onExit(soundManager)) {
 					delete gameStates.back();
 					gameStates.pop_back();
+					std::cout << "pop1\n";
 				}
 			}
 			if (t.state) {

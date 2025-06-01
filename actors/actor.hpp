@@ -12,6 +12,7 @@ class SoundManager;
 class Camera;
 class MeleeAttack;
 class Projectile;
+class UITextBox;
 
 struct ActorTextureID {
 	size_t move;
@@ -33,27 +34,25 @@ protected:
 	States lastState;
 
 	ActorTextureID actorTextureID;
-
 	float attackFrameSpeed;
 
 	bool isNPC;
+
+	UITextBox* combatlog;
 public:
-	Actor(const Float2& pos);
+	Actor(const Float2& pos, UITextBox* const combatlog);
 	~Actor();
 
 	virtual void update(const float dt);
-	virtual void draw(Renderer* renderer, const Camera& camera) const;
+	virtual void draw(Renderer* renderer, const Camera& camera, const bool& iso = false) const;
 	virtual void attack(SoundManager* soundManager, const float now, std::vector<Projectile*>& projectiles, std::vector<MeleeAttack*>& swings);
 
 	void setState(const States& state);
+
 	States getState() const;
-
 	float getAngle() const;
-
 	float getIsNPC() const;
-
 	std::queue<Commands>& getCommands();
-
 	size_t& getMoveTextureID();
 	size_t& getAttackTextureID();
 	size_t& getMoveAttackTextureID();

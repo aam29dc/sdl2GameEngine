@@ -3,7 +3,7 @@
 #include "objects/light.hpp"
 #include <string>
 #include <vector>
-#include <tuple>
+#include <tuple>	// ?
 
 class Renderer;
 class Npc;
@@ -38,31 +38,25 @@ private:
 
 	size_t mapWidth;
 	size_t mapHeight;
-
-	static const int MARGIN = 1;
 public:
-	Level(const size_t mapWidth, const size_t mapHeight);
+	Level(const size_t mapWidth = 0, const size_t mapHeight = 0);
 	~Level();
 
 	bool load(Renderer* renderer,
-		const std::string& bgLevel, const std::string& bgImg,
-		const std::string& groundLevel, const std::string& groundImg,
-		const std::string& objectsLevel, const std::string& objectsImg,
-		const std::string& itemsLevel, const std::string& itemsImg);
+		const std::string& bgLevel = "", const std::string& bgImg = "",
+		const std::string& groundLevel = "", const std::string& groundImg = "",
+		const std::string& objectsLevel = "", const std::string& objectsImg = "",
+		const std::string& itemsLevel = "", const std::string& itemsImg = "", const bool& iso = false);
 
-	void draw(Renderer* renderer, Player* player, const std::vector<Npc*>& npc, const Camera& camera);
-	void drawMap(Renderer* renderer, const Player* player, const Camera& camera, const float scale) const;
-	void drawBackground(Renderer* renderer, const Camera& camera) const;
+	void draw(Renderer* renderer, Player* player, const std::vector<Npc*>& npc, const Camera& camera, const bool& iso = false, const float& angle = 0.0f);
+	void drawBackground(Renderer* renderer, const Camera& camera, const bool& iso = false) const;
 
-	const Int2 convertToSrc(const char ch, const Int2& size, const int margin) const;
-	const Int2 convertToItemSrc(const char ch, const Int2& size, const int margin) const;
+	bool isWalkable(const Float2& pos) const;
 
 	size_t getMapWidth() const;
 	size_t getMapHeight() const;
 
 	const std::vector<Tile>& getGroundTiles() const;
-
-	bool isWalkable(const Float2& pos) const;
 
 	std::vector<SDLGameObject*>& getObjects();
 	std::vector<GameItem*>& getItems();

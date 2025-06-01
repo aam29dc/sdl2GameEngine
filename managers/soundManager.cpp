@@ -134,7 +134,6 @@ void SoundManager::push(const std::string& id, const Float2 &pos) {
 
 void SoundManager::update(const Camera* const camera) {
 	while (!soundsQueue.empty()) {
-		if(soundsQueue.front().)
 		playSfx(soundsQueue.front(), camera);
 		soundsQueue.pop();
 	}

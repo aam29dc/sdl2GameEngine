@@ -6,8 +6,8 @@
 class Window;
 
 enum MouseButtons {
-	LEFT = 0,
-	MIDDLE = 1,
+	MIDDLE = 0,
+	LEFT = 1,
 	RIGHT = 2
 };
 
@@ -42,4 +42,9 @@ public:
 	bool isKeyDown(const SDL_Scancode& key) const;
 	bool isKeyReleased(const SDL_Scancode& key) const;
 	bool isMouseKeyReleased(const int buttonNumber) const;
+	bool isAnyKeyDown() const;
+
+	SDL_Scancode getFirstKeyDown() const;
+	SDL_Scancode getFirstKeyReleased() const;
+	bool isAnyKeyReleased() const;
 };

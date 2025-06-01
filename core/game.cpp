@@ -3,7 +3,6 @@
 #include "core/window.hpp"
 #include "core/renderer.hpp"
 #include "core/input.hpp"
-#include "core/camera.hpp"
 #include "managers/textureManager.hpp"
 #include "managers/soundManager.hpp"
 #include "managers/fontManager.hpp"
@@ -78,6 +77,7 @@ bool Game::init(const int windowWidth, const int windowHeight) {
 
 		return true;
 	}
+
 	return false;
 }
 
@@ -95,7 +95,7 @@ bool Game::update() const {
 		camera = state->getCamera();
 	}
 
-	soundManager->update(camera);
+	if(camera) soundManager->update(camera);
 
 	return empty;
 }

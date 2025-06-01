@@ -1,6 +1,7 @@
 #pragma once
 
 #include "enums/itemTypes.hpp"
+#include "SDL_rect.h"
 
 class InventoryItem {
 private:
@@ -11,4 +12,6 @@ public:
 	virtual ~InventoryItem();
 
 	const ItemType& getType() const;
+
+	static SDL_Rect getSrc(const ItemType& type);
 };

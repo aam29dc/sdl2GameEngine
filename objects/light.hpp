@@ -15,7 +15,7 @@ protected:
 public:
 	Light(const Float2& pos, const float z, const float intensity = 1.0f);
 
-	void drawShadows(Renderer* renderer, const std::vector<SDLGameObject*>& objects, const Camera& camera);
+	void drawShadows(Renderer* renderer, const std::vector<SDLGameObject*>& objects, const Camera& camera, const bool& iso = false);
 
 	void setZ(const float z);
 	float getZ() const;

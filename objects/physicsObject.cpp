@@ -1,6 +1,7 @@
 #include "physicsObject.hpp"
 #include "core/renderer.hpp"
 #include "core/camera.hpp"
+#include "enums/color.hpp"
 
 PhysicsObject::PhysicsObject(const Float2& pos, const Float2& velocity, const Float2& size) {
 	this->pos = pos;
@@ -9,7 +10,7 @@ PhysicsObject::PhysicsObject(const Float2& pos, const Float2& velocity, const Fl
 	this->size = size;
 
 	drawFilled = true;
-	color = { 255, 255, 0, 255 };
+	color = Color::Yellow;
 	instanceCount++;
 }
 
@@ -21,11 +22,20 @@ size_t PhysicsObject::getInstanceCount() {
 	return instanceCount;
 }
 
-void PhysicsObject::draw(Renderer* renderer, const Camera& camera) const {
+void PhysicsObject::draw(Renderer* renderer, const Camera& camera, const bool& iso) const {
 	SDL_FRect rect = { pos.x, pos.y, size.x, size.y };
 	SDL_FRect outlineRect = { rect.x - 1, rect.y - 1, rect.w + 2, rect.h + 2 };
-	outlineRect = renderer->scale(camera.worldToView(outlineRect));
-	rect = renderer->scale(camera.worldToView(rect));
+
+	outlineRect = camera.worldToView(outlineRect);
+	rect = camera.worldToView(rect);
+
+	if (iso) {
+		outlineRect = renderer->viewToIso(outlineRect);
+		rect = renderer->viewToIso(rect);
+	}
+
+	outlineRect = renderer->scale(outlineRect);
+	rect = renderer->scale(rect);
 
 	SDL_SetRenderDrawColor(renderer->sdlRenderer, 0, 0, 0, 255/4);
 	SDL_RenderDrawRectF(renderer->sdlRenderer, &outlineRect);

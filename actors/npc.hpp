@@ -27,11 +27,13 @@ private:
 
 	bool lastPlayerLOS;
 public:
-	Npc(const Float2& pos = { 0.0f, 0.0f });
+	Npc(const Float2& pos = { 0.0f, 0.0f }, UITextBox* const combatlog = nullptr);
 	~Npc();
 
 	void update(const float dt, const float now, const Player& player, const bool playerLOS, const Camera& camera);
 	void drawLOS(Renderer* renderer, const Player& player, const Camera& camera) const;
 	void setPos(const Float2& pos);
 	float getLosRadius() const;
+
+	void takeDamage(const int damage) override;
 };

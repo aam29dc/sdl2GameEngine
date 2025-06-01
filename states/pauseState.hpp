@@ -11,6 +11,7 @@ class PauseState : public GameState {
 private:
 public:
 	PauseState(Window* window, GameStateMachine* GSM) : GameState(window, GSM, "Pause") {}
+	virtual ~PauseState();
 	virtual void handleEvents();
 
 	static void UIButtonRestart(void* ctx);

@@ -6,6 +6,7 @@ class GameOverState : public GameState {
 private:
 public:
 	GameOverState(Window* window, GameStateMachine* GSM) : GameState(window, GSM, "GameOver") {}
+	virtual ~GameOverState();
 
 	static void UIButtonRestart(void* ctx);
 	static void UIButtonMainMenu(void* ctx);
