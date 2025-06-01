@@ -1,0 +1,72 @@
+{
+    "actors": [
+        {
+            "angle": -2.8364150524139404,
+            "health": 85,
+            "pos": [
+                422.9085998535156,
+                450.0
+            ],
+            "type": "Player",
+            "velocity": [
+                0.0,
+                0.0
+            ]
+        }
+    ],
+    "destructibles": [],
+    "items": [
+        {
+            "pickedUp": false,
+            "pos": [
+                0.0,
+                0.0
+            ],
+            "src": [
+                34,
+                1
+            ],
+            "type": 1
+        },
+        {
+            "pickedUp": false,
+            "pos": [
+                64.0,
+                0.0
+            ],
+            "src": [
+                67,
+                1
+            ],
+            "type": 2
+        },
+        {
+            "pickedUp": false,
+            "pos": [
+                128.0,
+                0.0
+            ],
+            "src": [
+                100,
+                1
+            ],
+            "type": 3
+        },
+        {
+            "pickedUp": false,
+            "pos": [
+                192.0,
+                0.0
+            ],
+            "src": [
+                133,
+                1
+            ],
+            "type": 4
+        }
+    ],
+    "level": "level1",
+    "objects": [],
+    "timer": 5.763924598693848,
+    "version": 1
+}
