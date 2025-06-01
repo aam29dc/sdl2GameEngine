@@ -42,6 +42,7 @@ last updated 6/1/2025
 (those that are * stared at the end aren't fully implemented/functional)
 
 plans to add:
+
 -support for other views (side), and associated logic with those views (gravity, etc)
 
 -tiled map support for better map editing
