@@ -5,6 +5,7 @@
 #include "enums/color.hpp"
 #include <vector>
 #include <iostream>
+#include <utility>
 
 class UIElement {
 protected:
@@ -68,10 +69,33 @@ public:
 	virtual ~UITextBox() {}
 
 	virtual void draw(Renderer* renderer, const unsigned int windowWidth, const unsigned int windowHeight) const;
-	virtual void endLine();
 	virtual void addLine(const std::string& text);
-	virtual void addChar(const std::string& ch);
+	
+	virtual size_t getSize() const;
 	virtual void changeIndex(const int val);
+};
+
+class UIConsole : public UITextBox {
+protected:
+	size_t cur;
+	std::vector<std::string> input;
+	std::string currentInputLine;
+public:
+	UIConsole(const SDL_FRect& rect = { 0 },
+		const SDL_Color& color = Color::Shade,
+		const bool centered = false, const std::string& name = "Console");
+	virtual ~UIConsole() {}
+
+	virtual void draw(Renderer* renderer, const unsigned int windowWidth, const unsigned int windowHeight) const;
+
+	virtual std::string getInput(const size_t index);
+	virtual void delChar();
+	virtual void endLine();
+	virtual void replaceLine(const std::string& text);
+	virtual void addChar(const std::string& ch);
+	virtual size_t getCur() const;
+	virtual void handleInput();
+	virtual void print(const std::string& text);
 };
 
 class UIButton : public UIElement {

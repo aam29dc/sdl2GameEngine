@@ -2,8 +2,6 @@
 #include "core/window.hpp"
 #include "core/time.hpp"
 
-#include <iostream>
-
 #undef main
 int main() {
 	int windowWidth = 1440;

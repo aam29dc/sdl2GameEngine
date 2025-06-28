@@ -26,7 +26,7 @@ Actor::Actor(const Float2& pos, UITextBox* const combatlog) : AnimateGameObject(
 	size = { (float)SIZE, ((float)SIZE * 2) };
 	this->isStatic = false;
 
-	health = 100;
+	health = 50;
 	maxHealth = 100;
 
 	currentWeapon = 0;
@@ -40,6 +40,9 @@ Actor::Actor(const Float2& pos, UITextBox* const combatlog) : AnimateGameObject(
 	isNPC = true;
 
 	this->combatlog = combatlog;
+
+	damageTakenMultiplier = 1.0f;
+	damageDealtMultiplier = 1.0f;
 }
 
 Actor::~Actor() {
@@ -49,6 +52,7 @@ Actor::~Actor() {
 }
 
 void Actor::update(const float dt) {
+	Health::regenHealth(dt);
 	AnimateGameObject::update(dt);
 
 	unsigned int frameCol = frame % frameCols;
@@ -192,4 +196,25 @@ size_t& Actor::getAttackTextureID() {
 
 size_t& Actor::getMoveAttackTextureID() {
 	return actorTextureID.moveAttack;
+}
+
+void Actor::setDamageTakenMultiplier(const float m) { 
+	damageTakenMultiplier = m; 
+}
+
+float Actor::getDamageTakenMultiplier() const { 
+	return damageTakenMultiplier; 
+}
+
+void Actor::setDamageDealtMultiplier(const float m) { 
+	damageDealtMultiplier = m; 
+}
+
+float Actor::getDamageDealtMultiplier() const { 
+	return damageDealtMultiplier; 
+}
+
+void Actor::takeDamage(const int damage) {
+	int finalDamage = static_cast<int>(damage * damageTakenMultiplier);
+	health -= finalDamage;
 }

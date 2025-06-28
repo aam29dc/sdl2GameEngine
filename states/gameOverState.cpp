@@ -15,14 +15,14 @@ GameOverState::~GameOverState() {
 void GameOverState::UIButtonRestart(void* ctx) {
 	auto* state = static_cast<GameOverState*>(ctx);
 	state->GSM->getSoundManager()->push("click");
-	state->GSM->queueChange(new PlayState(state->window, state->GSM));
+	state->GSM->queueChange(new PlayState(state->window, state->GSM, state->console, state->binds));
 }
 
 void GameOverState::UIButtonMainMenu(void* ctx) {
 	auto* state = static_cast<GameOverState*>(ctx);
 	state->GSM->getSoundManager()->push("click");
 	state->GSM->queuePop();
-	state->GSM->queueChange(new MenuState(state->window, state->GSM));
+	state->GSM->queueChange(new MenuState(state->window, state->GSM, state->console, state->binds));
 }
 
 bool GameOverState::onEnter(Renderer* renderer, SoundManager* soundManager) {

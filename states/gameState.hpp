@@ -5,6 +5,8 @@ class Renderer;
 class GameStateMachine;
 class UserInterface;
 class SoundManager;
+class UIConsole;
+class Binds;
 
 #include <string>
 
@@ -14,8 +16,11 @@ protected:
 	GameStateMachine* GSM;
 	UserInterface* UI;
 	std::string id;
+
+	UIConsole* console;
+	Binds* binds;
 public:
-	GameState(Window* window, GameStateMachine* GSM = nullptr, const std::string& id = "");
+	GameState(Window* window, GameStateMachine* GSM = nullptr, const std::string& id = "", UIConsole* console = nullptr, Binds* binds = nullptr);
 	virtual ~GameState() {}
 	virtual void handleEvents();
 

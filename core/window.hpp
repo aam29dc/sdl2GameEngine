@@ -30,4 +30,5 @@ public:
 	const bool getFullscreen() const;
 	const bool getMinimized() const;
 	const bool getQuit() const;
+	void setQuit(bool val);
 };

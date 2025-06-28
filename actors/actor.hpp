@@ -39,6 +39,9 @@ protected:
 	bool isNPC;
 
 	UITextBox* combatlog;
+
+	float damageTakenMultiplier;
+	float damageDealtMultiplier;
 public:
 	Actor(const Float2& pos, UITextBox* const combatlog);
 	~Actor();
@@ -56,4 +59,12 @@ public:
 	size_t& getMoveTextureID();
 	size_t& getAttackTextureID();
 	size_t& getMoveAttackTextureID();
+
+	void setDamageTakenMultiplier(const float m);
+	float getDamageTakenMultiplier() const;
+
+	void setDamageDealtMultiplier(const float m);
+	float getDamageDealtMultiplier() const;
+
+	void takeDamage(const int damage);
 };

@@ -110,3 +110,7 @@ const bool Window::getMinimized() const {
 const bool Window::getQuit() const {
 	return quit;
 }
+
+void Window::setQuit(bool val) {
+	quit = val;
+}

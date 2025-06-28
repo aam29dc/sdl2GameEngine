@@ -4,7 +4,7 @@
 #include "ui/uiElement.hpp"
 #include "core/binds.hpp"
 
-Player::Player(const Float2& pos, UITextBox* const combatlog, Binds* const binds, UITextBox* const console) : Actor(pos, combatlog),
+Player::Player(const Float2& pos, UITextBox* const combatlog, Binds* const binds, UIConsole* const console) : Actor(pos, combatlog),
 	inventory({ ItemType::Empty })
 {
 	weapons = { Weapon("Bow", 0.1f, 450.0f, 4.0f, 25, 2), Weapon("Melee", 0.5f, 10.0f, 32.0f, 20) };
@@ -169,6 +169,6 @@ unsigned int Player::getExp() const {
 }
 
 void Player::takeDamage(const int damage) {
-	health -= damage;
+	Actor::takeDamage(damage);
 	combatlog->addLine("You took " + std::to_string(damage) + " damage.");
 }

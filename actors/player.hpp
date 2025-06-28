@@ -5,6 +5,7 @@
 
 class Camera;
 class Binds;
+class UIConsole;
 
 class Player final: public Actor {
 public:
@@ -20,7 +21,7 @@ private:
 	Binds* binds;
 	UITextBox* console;
 public:
-	Player(const Float2& pos = {0}, UITextBox* const combatlog = nullptr, Binds* const binds = nullptr, UITextBox* const console = nullptr);
+	Player(const Float2& pos = {0}, UITextBox* const combatlog = nullptr, Binds* const binds = nullptr, UIConsole* const console = nullptr);
 	virtual ~Player();
 
 	void input(const SDL_FPoint& mousePos);

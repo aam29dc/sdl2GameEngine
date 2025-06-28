@@ -1,4 +1,5 @@
 #include "components/health.hpp"
+#include <algorithm>
 
 void Health::takeDamage(const int damage) {
 	health -= damage;
@@ -22,4 +23,15 @@ int Health::getMaxHealth() const {
 
 int Health::getHealth() const {
 	return health;
+}
+
+void Health::regenHealth(const float dt) {
+	if (health >= maxHealth) return;
+
+	timeLastRegen += dt;
+
+	if (timeLastRegen >= regenTick) {
+		health = std::min(health + int(maxHealth * regenPercent), maxHealth);
+		timeLastRegen = 0;
+	}
 }

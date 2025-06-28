@@ -1,6 +1,7 @@
 #include "uiElement.hpp"
 #include "core/renderer.hpp"
 #include "managers/textureManager.hpp"
+#include <algorithm>
 
 SDL_FRect UIElement::getScaledPos(const SDL_FRect& rect, const unsigned int windowWidth, const unsigned int windowHeight) const {
 	SDL_FRect newRect = rect;
@@ -32,7 +33,6 @@ UIElement::UIElement(const SDL_FRect& rect, const SDL_Color& color, const bool c
 	this->id = instanceCount;
 	this->name = name;
 	instanceCount++;
-	std::cout << "created: " << id << "\n";
 }
 
 void UIElement::draw(Renderer* renderer, const unsigned int windowWidth, const unsigned int windowHeight) const {
@@ -102,7 +102,9 @@ void UITextBox::draw(Renderer* renderer, const unsigned int windowWidth, const u
 
 	unsigned int i = 0;
 
-	for (int h = 0; h < rect.h; h+=((int)rect.h/5)) {
+	int next = (int)rect.h / 20;
+
+	for (int h = 0; h < rect.h; h+=((int)rect.h/next)) {
 		if (i >= lines.size()) break;
 		
 		FontManager::getInstance().drawText(renderer, lines.at(lines.size() - 1 - i), FontManager::FontSize::MEDIUM, lineRect.x, lineRect.y - h, textColor, windowWidth, windowHeight);
@@ -110,21 +112,175 @@ void UITextBox::draw(Renderer* renderer, const unsigned int windowWidth, const u
 	}
 }
 
-void UITextBox::endLine() {
-	lines.emplace_back("");
+size_t UITextBox::getSize() const {
+	return lines.size();
+}
+
+void UITextBox::changeIndex(const int val) {
+	this->index += val;
 }
 
 void UITextBox::addLine(const std::string& text) {
 	lines.emplace_back(text);
 }
 
-void UITextBox::addChar(const std::string& ch) {
-	if (lines.empty()) lines.push_back(ch);
-	else lines.back().append(ch);
+UIConsole::UIConsole(const SDL_FRect& rect,	const SDL_Color& color,	const bool centered, const std::string& name) : UITextBox(rect, color, centered, name) {
+	this->cur = input.size();
 }
 
-void UITextBox::changeIndex(const int val) {
-	this->index += val;
+void UIConsole::draw(Renderer* renderer, const unsigned int windowWidth, const unsigned int windowHeight) const {
+	if (!visible) return;
+	UIElement::draw(renderer, windowWidth, windowHeight);
+
+	// Reserve 1 line at the bottom for input
+	const float lineHeight = 20.0f;
+	const int maxVisibleLines = (int)(rect.h / lineHeight) - 1; // One less to reserve for input
+	SDL_FRect scaledRect = getScaledPos(rect, windowWidth, windowHeight);
+
+	// Draw history lines
+	for (int i = 0; i < maxVisibleLines; ++i) {
+		size_t lineIndex = (lines.size() >= maxVisibleLines)
+			? lines.size() - maxVisibleLines + i
+			: i;
+
+		if (lineIndex >= lines.size()) break;
+
+		float y = scaledRect.y + lineHeight * i;
+		FontManager::getInstance().drawText(renderer, lines[lineIndex],
+			FontManager::FontSize::MEDIUM,
+			scaledRect.x,
+			y,
+			textColor,
+			windowWidth,
+			windowHeight);
+	}
+
+	// Draw current input line at the bottom
+	float inputY = scaledRect.y + scaledRect.h - lineHeight;
+	FontManager::getInstance().drawText(renderer, currentInputLine,
+		FontManager::FontSize::MEDIUM,
+		scaledRect.x,
+		inputY,
+		textColor,
+		windowWidth,
+		windowHeight);
+}
+
+void UIConsole::delChar() {
+	if (!currentInputLine.empty()) {
+		currentInputLine.pop_back();
+	}
+}
+
+void UIConsole::endLine() {
+	input.push_back(currentInputLine);   // Save to input history
+	lines.push_back(currentInputLine);   // Display it as output
+	currentInputLine.clear();            // Reset for next line
+	cur = input.size();                  // Reset history cursor
+}
+
+void UIConsole::replaceLine(const std::string& text) {
+	currentInputLine = text;
+}
+
+void UIConsole::addChar(const std::string& ch) {
+	currentInputLine.append(ch);
+}
+
+size_t UIConsole::getCur() const {
+	return cur;
+}
+
+std::string UIConsole::getInput(const size_t index) {
+	if (input.empty()) return "";
+
+	// Clamp index to valid range
+	cur = std::clamp(index, size_t(0), input.size() - 1);
+	return input[cur];
+}
+
+void UIConsole::print(const std::string& text) {
+	lines.emplace_back(text);
+	endLine();
+}
+
+#include "core/input.hpp"
+#include "managers/cvarManager.hpp"
+#include <sstream>
+
+void UIConsole::handleInput() {
+	auto inputHandler = Input::getInputHandler();
+	SDL_Scancode key = inputHandler->getFirstKeyReleased();
+
+	if (key != SDL_SCANCODE_UNKNOWN) {
+		if (key == SDL_SCANCODE_RETURN) {
+			endLine();
+
+			size_t historyIndex = (getSize() >= 2) ? (getSize() - 2) : 0;
+			std::string line = getInput(historyIndex);
+			std::istringstream input(line);
+			std::string cmd;
+			input >> cmd;
+
+			std::cout << line << "\n";
+
+			cmd.erase(0, cmd.find_first_not_of(" \t\r\n"));
+			cmd.erase(cmd.find_last_not_of(" \t\r\n") + 1);
+
+			BaseCvar* cvar = CvarManager::getInstance().getCvar(cmd);
+
+			if (cvar) {
+				cvar->setFromString(cvar->extractCvarValue(line));
+			}
+			else std::cout << "Unknown cvar/cmd.\n";
+		}
+		else if (key == SDL_SCANCODE_BACKSPACE || key == SDL_SCANCODE_DELETE) {
+			delChar();
+		}
+		else if (key >= SDL_SCANCODE_A && key <= SDL_SCANCODE_Z) {
+			bool shift = inputHandler->isKeyDown(SDL_SCANCODE_LSHIFT) || inputHandler->isKeyDown(SDL_SCANCODE_RSHIFT);
+			char c = (shift) ? ('A' + (key - SDL_SCANCODE_A)) : ('a' + (key - SDL_SCANCODE_A));
+			addChar(std::string(1, c));
+		}
+		else if (key >= SDL_SCANCODE_1 && key <= SDL_SCANCODE_0) {
+			bool shift = inputHandler->isKeyDown(SDL_SCANCODE_LSHIFT) || inputHandler->isKeyDown(SDL_SCANCODE_RSHIFT);
+
+			const char normalNums[] = "1234567890";
+			const char shiftedNums[] = "!@#$%^&*()";
+
+			int index = (key == SDL_SCANCODE_0) ? 9 : (key - SDL_SCANCODE_1);
+			if (index >= 0 && index < 10) {
+				char outputChar = shift ? shiftedNums[index] : normalNums[index];
+				addChar(std::string(1, outputChar));
+			}
+		}
+		else if (key == SDL_SCANCODE_UP) {
+			if (cur > 0) cur--;
+			replaceLine(getInput(cur));
+		}
+		else if (key == SDL_SCANCODE_DOWN) {
+			if (cur < input.size() - 1) {
+				cur++;
+				replaceLine(getInput(cur));
+			}
+			else {
+				cur = input.size(); // move past last item
+				replaceLine("");
+			}
+		}
+		else if (key == SDL_SCANCODE_SPACE) {
+			addChar(" ");
+		}
+		else if (key == SDL_SCANCODE_MINUS) {
+			addChar("-");
+		}
+		else if (key == SDL_SCANCODE_PERIOD) {
+			addChar(".");
+		}
+		else if (key == SDL_SCANCODE_EQUALS) {
+			addChar("=");
+		}
+	}
 }
 
 UIButton::UIButton(const SDL_FRect& rect, const SDL_Color& color, const std::string& text, void (*callback)(void*), void* context, const bool centered)

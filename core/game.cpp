@@ -9,6 +9,10 @@
 #include "states/gameStateMachine.hpp"
 #include "states/menuState.hpp"
 #include "states/playState.hpp"
+#include "managers/cvarManager.hpp"
+#include "core/time.hpp"
+#include "ui/uiElement.hpp"
+#include "core/binds.hpp"
 
 #ifdef DEBUG
 	#include <iostream>
@@ -20,6 +24,8 @@ Game::Game() {
 	soundManager = nullptr;
 	gameStateMachine = nullptr;
 	defaultTextureID = 0;
+	binds = nullptr;
+	console = nullptr;
 }
 
 Game::~Game() {
@@ -68,12 +74,26 @@ bool Game::init(const int windowWidth, const int windowHeight) {
 		soundManager = new SoundManager();
 		if (!soundManager->init()) return false;
 
-		gameStateMachine = new GameStateMachine(window, renderer, soundManager);
-		gameStateMachine->queuePush(new MenuState(window, gameStateMachine));
-
 		//load default texture, with textureID = 0, this is for all failed loaded textures
 		//const std::string path = "assets/textures/default.png";
 		//TextureManager::getInstance()->load(renderer, defaultTextureID, path);
+
+		//cvars
+		registerCvars();
+
+		//binds
+		binds = new Binds();
+		binds->readBinds("assets/binds.ini");
+
+		//console
+		console = new UIConsole({ 0, 0, 1440, 450 });
+		console->toggleVisible();
+
+		console->print("Welcome to Neiths adventure.");
+
+		//gamestatemachine
+		gameStateMachine = new GameStateMachine(window, renderer, soundManager);
+		gameStateMachine->queuePush(new MenuState(window, gameStateMachine, console, binds));
 
 		return true;
 	}
@@ -83,6 +103,15 @@ bool Game::init(const int windowWidth, const int windowHeight) {
 
 void Game::handleEvents() const {
 	Input::getInputHandler()->update(window);
+
+	if (Input::getInputHandler()->isKeyReleased(binds->getMiscBind(Misc::CONSOLE).key)) {
+		console->toggleVisible();
+	}
+
+	if (console->getVisible()) {
+		console->handleInput();
+	}
+
 	gameStateMachine->handleEvents();
 }
 
@@ -104,9 +133,46 @@ void Game::render() const {
 	SDL_SetRenderDrawColor(renderer->sdlRenderer, 0, 0, 0, 255);
 	SDL_RenderClear(renderer->sdlRenderer);
 	gameStateMachine->render(renderer);
+	console->draw(renderer, window->getWidth(), window->getHeight());
 	SDL_RenderPresent(renderer->sdlRenderer);
+}
+
+void Game::registerCvars() {
+	Cvar<float>* c = new Cvar<float>("timescale",
+		[](const float& t) { Time::getInstance()->setTimeScale(t); },
+		[]() { return Time::getInstance()->getTimeScale(); });
+
+	CvarManager::getInstance().registerCvar(c);
+
+	Cvar<bool>* quitCvar = new Cvar<bool>(
+		"quit",
+		[&](const bool& v) { getWindow()->setQuit(v); },
+		[&]() { return getWindow()->getQuit(); }
+	);
+
+	CvarManager::getInstance().registerCvar(quitCvar);
+
+	Cvar<float>* dmgMultCvar = new Cvar<float>(
+		"dmgtaken",
+		[&](const float& v) {
+			auto player = getCurrentPlayer();
+			if (player) player->setDamageTakenMultiplier(v);
+		},
+		[&]() -> float {
+			auto player = getCurrentPlayer();
+			return player ? player->getDamageTakenMultiplier() : 1.0f;
+		}
+	);
+	CvarManager::getInstance().registerCvar(dmgMultCvar);
 }
 
 Window* Game::getWindow() const {
 	return window;
+}
+
+Player* Game::getCurrentPlayer() {
+	GameState* current = gameStateMachine->getCurrentState();
+	PlayState* playState = dynamic_cast<PlayState*>(current);
+	if (playState) return playState->getPlayer();
+	return nullptr;
 }

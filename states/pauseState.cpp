@@ -7,6 +7,7 @@
 #include "states/menuState.hpp"
 #include "states/playState.hpp"
 #include "ui/userInterface.hpp"
+#include "core/binds.hpp"
 #include <iostream>
 
 void PauseState::handleEvents() {
@@ -25,14 +26,14 @@ void PauseState::UIButtonRestart(void* ctx) {
 	auto* state = static_cast<PauseState*>(ctx);
 	state->GSM->getSoundManager()->push("click");
 	state->GSM->queuePop();
-	state->GSM->queueChange(new PlayState(state->window, state->GSM));
+	state->GSM->queueChange(new PlayState(state->window, state->GSM, state->console, state->binds));
 }
 
 void PauseState::UIButtonMainMenu(void* ctx) {
 	auto* state = static_cast<PauseState*>(ctx);
 	state->GSM->getSoundManager()->push("click");
 	state->GSM->queuePop();
-	state->GSM->queueChange(new MenuState(state->window, state->GSM));
+	state->GSM->queueChange(new MenuState(state->window, state->GSM, state->console, state->binds));
 }
 
 bool PauseState::onEnter(Renderer* renderer, SoundManager* soundManager) {
@@ -43,6 +44,10 @@ bool PauseState::onEnter(Renderer* renderer, SoundManager* soundManager) {
 	UI->addElement(new UIButton({ 0,50, 100, 20 }, Color::White, "Main Menu", UIButtonMainMenu, this, true));
 
 	return true;
+}
+
+void PauseState::render(Renderer* renderer) const {
+	UI->render(renderer);
 }
 
 bool PauseState::onExit(SoundManager* soundManager) {

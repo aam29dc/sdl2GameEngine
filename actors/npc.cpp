@@ -112,7 +112,6 @@ void Npc::drawLOS(Renderer* renderer, const Player& player, const Camera& camera
 	Float2 newPos = renderer->scale(camera.worldToView(pos));
 	Float2 playerPos = renderer->scale(camera.worldToView(player.getPos()));
 
-
 	SDL_SetRenderDrawColor(renderer->sdlRenderer, 255, 0, 0, 255);
 	SDL_RenderDrawLineF(renderer->sdlRenderer, newPos.x, newPos.y, playerPos.x, playerPos.y);
 }
@@ -127,6 +126,6 @@ float Npc::getLosRadius() const {
 }
 
 void Npc::takeDamage(const int damage) {
-	health -= damage;
+	Actor::takeDamage(damage);
 	combatlog->addLine("You did " + std::to_string(damage) + " damage to Enemy.");
 }

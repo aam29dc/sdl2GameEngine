@@ -4,6 +4,8 @@ class Renderer;
 class Window;
 class SoundManager;
 class GameState;
+class UIConsole;
+class Binds;
 
 #include <vector>
 #include <queue>

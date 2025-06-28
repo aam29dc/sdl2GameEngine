@@ -13,6 +13,7 @@ class Npc;
 class Camera;
 struct SaveData;
 class UITextBox;
+class UIConsole;
 class Binds;
 
 #include <vector>
@@ -38,10 +39,8 @@ private:
 	UITextBox* combatlog;
 
 	float timer;
-
-	Binds* binds;
 public:
-	PlayState(Window* window, GameStateMachine* GSM);
+	PlayState(Window* window, GameStateMachine* GSM, UIConsole* console, Binds* binds);
 	~PlayState();
 
 	float getTimer() const { return timer; }
@@ -66,4 +65,6 @@ public:
 	void clear();
 
 	Camera* getCamera() const;
+
+	Player* getPlayer();
 };

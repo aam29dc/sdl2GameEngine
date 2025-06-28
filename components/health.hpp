@@ -4,6 +4,10 @@ class Health {
 protected:
 	int health;
 	int maxHealth;
+
+	float regenPercent = 0.05f;
+	float regenTick = 3.0f;
+	float timeLastRegen = 0.0f;
 public:
 	virtual ~Health() {}
 	virtual void takeDamage(const int damage);
@@ -14,4 +18,6 @@ public:
 
 	int getMaxHealth() const;
 	int getHealth() const;
+
+	void regenHealth(const float dt);
 };

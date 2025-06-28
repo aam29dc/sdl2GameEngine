@@ -19,15 +19,15 @@
 #include "core/binds.hpp"
 #include "managers/cvarManager.hpp"
 #include <algorithm>
+#include <sstream>
 
-PlayState::PlayState(Window* window, GameStateMachine* GSM) : GameState(window, GSM, "Play") {
+PlayState::PlayState(Window* window, GameStateMachine* GSM, UIConsole* console, Binds* binds) : GameState(window, GSM, "Play", console, binds) {
 	level1 = nullptr;
 	player = nullptr;
 	camera = new Camera({ 1440.0f, 900.0f });
 	timer = 0.0f;
 	inventoryVisible = false;
 	combatlog = nullptr;
-	binds = nullptr;
 }
 
 PlayState::~PlayState() {
@@ -67,39 +67,16 @@ PlayState::~PlayState() {
 
 void PlayState::handleEvents() {
 	UI->handleEvents();
-	if(player) player->input(Input::getInputHandler()->getMousePosition());
 
-	if (Input::getInputHandler()->isKeyReleased(binds->getMiscBind(Misc::CONSOLE).key)) {
-		UI->getElementByName("Console")->toggleVisible();
-	}
-
-	if (UI->getElementByName("Console")->getVisible()) {
-		auto input = Input::getInputHandler();
-		SDL_Scancode key = input->getFirstKeyReleased();
-
-		if (key != SDL_SCANCODE_UNKNOWN) {
-			UITextBox* console = dynamic_cast<UITextBox*>(UI->getElementByName("Console"));
-
-			if (key == SDL_SCANCODE_RETURN) {
-				console->endLine(); // Commit current line
-			}
-			else if (key >= SDL_SCANCODE_A && key <= SDL_SCANCODE_Z) {
-				// Check for shift key
-				bool shift = input->isKeyDown(SDL_SCANCODE_LSHIFT) || input->isKeyDown(SDL_SCANCODE_RSHIFT);
-				char c = (shift) ? ('A' + (key - SDL_SCANCODE_A)) : ('a' + (key - SDL_SCANCODE_A));
-				console->addChar(std::string(1, c));
-			}
-			else if (key >= SDL_SCANCODE_1 && key <= SDL_SCANCODE_0) {
-				// Handle numbers (you can enhance this to handle shift symbols too)
-				const char* name = SDL_GetScancodeName(key);
-				console->addChar(name);
-			}
-		}
+	if (console->getVisible()) {
 		return;
 	}
 
+	if(player) player->input(Input::getInputHandler()->getMousePosition());
+
+
 	if (Input::getInputHandler()->isKeyReleased(binds->getInteractBind(Interact::PAUSE).key)) {
-		GSM->queuePush(new PauseState(window, GSM));
+		GSM->queuePush(new PauseState(window, GSM, console, binds));
 	}
 
 	if (Input::getInputHandler()->isKeyReleased(binds->getMiscBind(Misc::ZOOMOUT).key)) {
@@ -370,20 +347,15 @@ void PlayState::loadInventory(Renderer* renderer) {
 	}
 }
 
-// REDUCE CODE REUSE HERE
 bool PlayState::onEnter(Renderer* renderer, SoundManager* soundManager) {
 	std::cout << "Entering play state" << std::endl;
-
-	//Read Binds file
-	binds = new Binds();
-	binds->readBinds("assets/binds.ini");
 
 	//Combatlog (UI)
 	UI->addElement(new UITextBox({ 20, 760, 400, 100 }, Color::Shade, false, "CombatLog"));
 	combatlog = dynamic_cast<UITextBox*>(UI->getElementByName("CombatLog"));
 
 	//Allocate player
-	player = new Player({ 320.0f, 450.0f }, combatlog, binds, dynamic_cast<UITextBox*>(UI->getElementByName("Console")));
+	player = new Player({ 320.0f, 450.0f }, combatlog, binds, console);
 	camera->follow(player->getPos());
 
 	//Allocate npcs
@@ -422,14 +394,11 @@ bool PlayState::onEnter(Renderer* renderer, SoundManager* soundManager) {
 	refreshAllObjects();
 
 	//Load sounds
-	soundManager->load("assets/sounds/shoot.wav", "sfx_shoot", soundType::SOUND_SFX);
+	soundManager->load("assets/sounds/shoot.mp3", "sfx_shoot", soundType::SOUND_SFX);
 	soundManager->load("assets/sounds/click.wav", "sfx_click", soundType::SOUND_SFX);
 	soundManager->load("assets/sounds/melee.wav", "sfx_melee", soundType::SOUND_SFX);
 	soundManager->load("assets/sounds/gameOver.wav", "sfx_gameOver", soundType::SOUND_SFX);
 	soundManager->load("assets/sounds/potionUse.wav", "sfx_potionUse", soundType::SOUND_SFX);
-
-	Cvar<float> ts("timescale", [](const float& f) {Time::getInstance()->setTimeScale(f);}, []() { return Time::getInstance()->getTimeScale();});
-	CvarManager::getInstance()->registerCvar(&ts);
 
 	return true;
 }
@@ -524,4 +493,8 @@ SaveData PlayState::makeSnapShot() const {
 
 Camera* PlayState::getCamera() const {
 	return camera;
+}
+
+Player* PlayState::getPlayer() {
+	return player;
 }
