@@ -1,4 +1,4 @@
-last updated 6/28/2025 ~(progress on pause as I study A+ cert)~
+last updated 6/28/2025 `(progress on pause as I study A+ cert)`
 
 (this is my current project) 'basic' 2d game engine:
 -player has health and a weapon, shoot projectiles, pickup items, maintain an inventory, move around the level, collidide with objects and actors, etc
